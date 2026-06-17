@@ -66,8 +66,10 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS welfare_transactions (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     date          TEXT    NOT NULL DEFAULT (date('now')),
-    donor_name    TEXT    NOT NULL,
+    donor_name    TEXT,
     amount        REAL    NOT NULL DEFAULT 0,
+    type          TEXT    NOT NULL DEFAULT 'donation' CHECK(type IN ('donation', 'expense')),
+    notes         TEXT,
     created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -79,6 +81,18 @@ db.exec(`
     created_at TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// Add type and notes columns to welfare_transactions if they don't exist
+try {
+  db.exec("ALTER TABLE welfare_transactions ADD COLUMN type TEXT NOT NULL DEFAULT 'donation' CHECK(type IN ('donation', 'expense'))");
+} catch (e) {
+  // column already exists
+}
+try {
+  db.exec("ALTER TABLE welfare_transactions ADD COLUMN notes TEXT");
+} catch (e) {
+  // column already exists
+}
 
 // Seed welfare_fund row if empty
 const welfareCount = db.prepare('SELECT COUNT(*) AS cnt FROM welfare_fund').get();

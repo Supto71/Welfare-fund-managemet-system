@@ -132,10 +132,18 @@ router.put('/update-welfare', (req, res) => {
 
 // ── POST /api/admin/welfare-transaction ──────────────────────────────────────────
 router.post('/welfare-transaction', (req, res) => {
-  const { date, donor_name, amount } = req.body;
+  const { date, donor_name, amount, type = 'donation', notes } = req.body;
 
-  if (!date || !donor_name || amount === undefined) {
-    return res.status(400).json({ success: false, message: 'date, donor_name, and amount are required.' });
+  if (!date || amount === undefined) {
+    return res.status(400).json({ success: false, message: 'date and amount are required.' });
+  }
+
+  if (type === 'donation' && !donor_name) {
+    return res.status(400).json({ success: false, message: 'donor_name is required for donations.' });
+  }
+
+  if (type === 'expense' && !notes) {
+    return res.status(400).json({ success: false, message: 'notes (purpose) is required for expenses.' });
   }
 
   const parsedAmount = parseFloat(amount);
@@ -144,8 +152,8 @@ router.post('/welfare-transaction', (req, res) => {
   }
 
   try {
-    db.prepare("INSERT INTO welfare_transactions (date, donor_name, amount) VALUES (?, ?, ?)")
-      .run(date, donor_name, parsedAmount);
+    db.prepare("INSERT INTO welfare_transactions (date, donor_name, amount, type, notes) VALUES (?, ?, ?, ?, ?)")
+      .run(date, type === 'donation' ? donor_name : null, parsedAmount, type, type === 'expense' ? notes : null);
 
     return res.status(200).json({ success: true, message: 'Welfare transaction added successfully.' });
   } catch (err) {

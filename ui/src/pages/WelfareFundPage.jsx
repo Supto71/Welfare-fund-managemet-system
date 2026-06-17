@@ -17,6 +17,8 @@ export default function WelfareFundPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [search, setSearch] = useState('')
+  const [txType, setTxType] = useState('donation') // 'donation' or 'expense'
+  const [notes, setNotes] = useState('')
   
   // Form State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -54,8 +56,16 @@ export default function WelfareFundPage() {
 
   const handleSave = async (e) => {
     e.preventDefault()
-    if (!date || !donorName.trim() || amount === '' || isNaN(amount) || Number(amount) < 0) {
+    if (!date || amount === '' || isNaN(amount) || Number(amount) < 0) {
       setMsg('সব তথ্য সঠিকভাবে পূরণ করুন।')
+      return
+    }
+    if (txType === 'donation' && !donorName.trim()) {
+      setMsg('দাতার নাম লিখুন।')
+      return
+    }
+    if (txType === 'expense' && !notes.trim()) {
+      setMsg('খরচের খাত/বিবরণ লিখুন।')
       return
     }
     setSaving(true)
@@ -63,11 +73,14 @@ export default function WelfareFundPage() {
     try {
       await api.addWelfareTransaction({
         date,
-        donor_name: donorName.trim(),
-        amount: Number(amount)
+        donor_name: txType === 'donation' ? donorName.trim() : '',
+        amount: Number(amount),
+        type: txType,
+        notes: txType === 'expense' ? notes.trim() : ''
       })
       setShowModal(false)
       setDonorName('')
+      setNotes('')
       setAmount('')
       fetchTransactions()
     } catch (err) {
@@ -97,7 +110,8 @@ export default function WelfareFundPage() {
   ].filter(Boolean)))
 
   const filteredTransactions = transactions.filter(t =>
-    (t.donor_name || '').toLowerCase().includes(search.toLowerCase())
+    (t.donor_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (t.notes || '').toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -146,21 +160,31 @@ export default function WelfareFundPage() {
             <div className="flex gap-2 w-full sm:w-auto">
               <button onClick={() => window.print()} 
                 className="flex-1 sm:flex-none bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-50 hover:text-brand-navy transition shadow-sm flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <div className="text-left">
                   <div className="leading-tight">PDF ডাউনলোড / প্রিন্ট</div>
                   <div className="text-[10px] text-gray-400 font-normal leading-tight">PDF Download / Print</div>
                 </div>
               </button>
               {isAdmin && (
-                <button onClick={() => setShowModal(true)} 
-                  className="flex-1 sm:flex-none bg-brand-navy hover:bg-brand-navyLight text-white px-4 py-2 rounded-lg font-bold transition shadow-sm hover:shadow-md flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                  <div className="text-left">
-                    <div className="leading-tight">নতুন রেকর্ড</div>
-                    <div className="text-[10px] text-gray-300 font-normal leading-tight">New Donation</div>
-                  </div>
-                </button>
+                <>
+                  <button onClick={() => { setTxType('donation'); setDonorName(''); setNotes(''); setAmount(''); setMsg(''); setShowModal(true); }} 
+                    className="flex-1 sm:flex-none bg-brand-navy hover:bg-brand-navyLight text-white px-4 py-2 rounded-lg font-bold transition shadow-sm hover:shadow-md flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <div className="text-left">
+                      <div className="leading-tight">নতুন চাঁদা</div>
+                      <div className="text-[10px] text-gray-300 font-normal leading-tight">New Donation</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { setTxType('expense'); setDonorName(''); setNotes(''); setAmount(''); setMsg(''); setShowModal(true); }} 
+                    className="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm hover:shadow-md flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6"/></svg>
+                    <div className="text-left">
+                      <div className="leading-tight">নতুন খরচ</div>
+                      <div className="text-[10px] text-red-200 font-normal leading-tight">New Expense</div>
+                    </div>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -176,10 +200,10 @@ export default function WelfareFundPage() {
                     <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Date</div>
                   </th>
                   <th className="px-6 py-4 font-bold">
-                    <div>দাতার নাম</div>
-                    <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Donor Name</div>
+                    <div>বিবরণ (ধরণ ও খাত)</div>
+                    <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Details (Type & Purpose)</div>
                   </th>
-                  <th className="px-6 py-4 font-bold text-right text-green-600">
+                  <th className="px-6 py-4 font-bold text-right">
                     <div>টাকার পরিমাণ</div>
                     <div className="text-[10px] text-gray-400/80 font-normal lowercase mt-0.5">Amount</div>
                   </th>
@@ -201,26 +225,44 @@ export default function WelfareFundPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map(tx => (
-                    <tr key={tx.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-600">{tx.date}</td>
-                      <td className="px-6 py-4 font-bold text-gray-800">{tx.donor_name}</td>
-                      <td className="px-6 py-4 font-bold text-right text-green-700">
-                        <div className="inline-flex items-center gap-1 justify-end w-full">
-                          <CurrencySymbol className="w-3.5 h-3.5 text-green-700" />
-                          <span>{fmt(tx.amount)}</span>
-                        </div>
-                      </td>
-                      {isAdmin && (
-                        <td className="no-print px-6 py-4 text-center">
-                          <button onClick={() => handleDelete(tx.id)} title="ডিলিট করুন"
-                            className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                          </button>
+                  filteredTransactions.map(tx => {
+                    const isExpense = tx.type === 'expense'
+                    return (
+                      <tr key={tx.id} className="hover:bg-gray-50/80 transition-colors">
+                        <td className="px-6 py-4 font-medium text-gray-600">{tx.date}</td>
+                        <td className="px-6 py-4 font-medium text-gray-800">
+                          <div className="flex items-center gap-2">
+                            {isExpense ? (
+                              <>
+                                <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs select-none">খরচ (Expense)</span>
+                                <span className="font-bold text-gray-800">{tx.notes}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded text-xs select-none">চাঁদা (Donation)</span>
+                                <span className="font-bold text-gray-800">{tx.donor_name}</span>
+                              </>
+                            )}
+                          </div>
                         </td>
-                      )}
-                    </tr>
-                  ))
+                        <td className={`px-6 py-4 font-bold text-right ${isExpense ? 'text-red-600' : 'text-green-700'}`}>
+                          <div className="inline-flex items-center gap-1 justify-end w-full">
+                            <span>{isExpense ? '−' : '+'}</span>
+                            <CurrencySymbol className={`w-3.5 h-3.5 ${isExpense ? 'text-red-600' : 'text-green-700'}`} />
+                            <span>{fmt(tx.amount)}</span>
+                          </div>
+                        </td>
+                        {isAdmin && (
+                          <td className="no-print px-6 py-4 text-center">
+                            <button onClick={() => handleDelete(tx.id)} title="ডিলিট করুন"
+                              className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -234,7 +276,9 @@ export default function WelfareFundPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-800 text-lg">নতুন অনুদান যোগ করুন (Add New Donation)</h3>
+                <h3 className="font-bold text-gray-800 text-lg">
+                  {txType === 'donation' ? 'নতুন অনুদান যোগ করুন (Add New Donation)' : 'নতুন খরচ যোগ করুন (Add New Expense)'}
+                </h3>
                 <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
               </div>
 
@@ -247,15 +291,26 @@ export default function WelfareFundPage() {
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">দাতার নাম (Donor Name)</label>
-                  <input
-                    type="text" required autoFocus placeholder="দাতার নাম লিখুন"
-                    list="donor-suggestions"
-                    value={donorName} onChange={e => setDonorName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
-                  />
-                </div>
+                {txType === 'donation' ? (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">দাতার নাম (Donor Name)</label>
+                    <input
+                      type="text" required autoFocus placeholder="দাতার নাম লিখুন"
+                      list="donor-suggestions"
+                      value={donorName} onChange={e => setDonorName(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">খরচের বিবরণ / খাত (Purpose / Note)</label>
+                    <input
+                      type="text" required autoFocus placeholder="উদা: চা-নাস্তা, যাতায়াত খরচ"
+                      value={notes} onChange={e => setNotes(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">পরিমাণ (Amount)</label>
                   <div className="relative">
@@ -265,7 +320,7 @@ export default function WelfareFundPage() {
                     <input
                       type="number" required min="0" step="0.01" placeholder="উদা: 1000"
                       value={amount} onChange={e => setAmount(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium text-green-700 placeholder-gray-400"
+                      className={`w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium placeholder-gray-400 ${txType === 'donation' ? 'text-green-700' : 'text-red-600'}`}
                     />
                   </div>
                 </div>
@@ -277,7 +332,7 @@ export default function WelfareFundPage() {
                     বাতিল (Cancel)
                   </button>
                   <button type="submit" disabled={saving}
-                    className="flex-[2] bg-brand-navy text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition hover:bg-brand-navyLight flex items-center justify-center gap-2 disabled:opacity-60 disabled:shadow-none">
+                    className={`flex-[2] text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:shadow-none ${txType === 'donation' ? 'bg-brand-navy hover:bg-brand-navyLight' : 'bg-red-600 hover:bg-red-700'}`}>
                     {saving ? 'সংরক্ষণ...' : 'সংরক্ষণ করুন (Save)'}
                   </button>
                 </div>
