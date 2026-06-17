@@ -8,7 +8,7 @@ if (dns.setDefaultResultOrder) {
 const { Pool } = require('pg');
 
 // Resolve PostgreSQL URI
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:Share!AsenKhai99@db.rirsrckjjdhyhfdxbyis.supabase.co:5432/postgres';
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.rirsrckjjdhyhfdxbyis:Share!AsenKhai99@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres';
 
 const pool = new Pool({
   connectionString,
