@@ -7,18 +7,22 @@ const { authenticate } = require('../middleware/auth');
 const router = express.Router();
 
 // ── GET /api/welfare/transactions ───────────────────────────────────────────
-router.get('/transactions', authenticate, (req, res) => {
+router.get('/transactions', authenticate, async (req, res) => {
   try {
-    const transactions = db.prepare('SELECT id, date, donor_name, amount, type, notes FROM welfare_transactions ORDER BY date DESC, id DESC').all();
+    const transactionsRes = await db.query('SELECT id, date, donor_name, amount, type, notes FROM welfare_transactions ORDER BY date DESC, id DESC');
+    const transactions = transactionsRes.rows;
     
-    const welfare = db.prepare('SELECT total_expense FROM welfare_fund LIMIT 1').get();
-    const manualExpense = welfare ? welfare.total_expense : 0;
+    const welfareRes = await db.query('SELECT total_expense FROM welfare_fund LIMIT 1');
+    const welfare = welfareRes.rows[0];
+    const manualExpense = welfare ? parseFloat(welfare.total_expense) : 0;
     
-    const wtx_donation = db.prepare("SELECT SUM(amount) AS sum FROM welfare_transactions WHERE type = 'donation'").get();
-    const totalDonation = wtx_donation ? (wtx_donation.sum || 0) : 0;
+    const wtx_donationRes = await db.query("SELECT SUM(amount) AS sum FROM welfare_transactions WHERE type = 'donation'");
+    const wtx_donation = wtx_donationRes.rows[0];
+    const totalDonation = wtx_donation ? (parseFloat(wtx_donation.sum) || 0) : 0;
 
-    const wtx_expense = db.prepare("SELECT SUM(amount) AS sum FROM welfare_transactions WHERE type = 'expense'").get();
-    const totalExpense = manualExpense + (wtx_expense ? (wtx_expense.sum || 0) : 0);
+    const wtx_expenseRes = await db.query("SELECT SUM(amount) AS sum FROM welfare_transactions WHERE type = 'expense'");
+    const wtx_expense = wtx_expenseRes.rows[0];
+    const totalExpense = manualExpense + (wtx_expense ? (parseFloat(wtx_expense.sum) || 0) : 0);
 
     const welfareBalance = totalDonation - totalExpense;
 

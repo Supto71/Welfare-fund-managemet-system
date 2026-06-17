@@ -1,136 +1,157 @@
 'use strict';
 
-/**
- * Database module — uses Node.js built-in node:sqlite (Node 22+)
- * No native compilation required.
- */
-
-const { DatabaseSync } = require('node:sqlite');
-const path = require('path');
-const fs   = require('fs');
-
-// ─── Resolve DB path ──────────────────────────────────────────────────────────
-const dbPath = process.env.DB_PATH
-  ? path.resolve(process.env.DB_PATH)
-  : path.resolve(__dirname, '../../data/welfare_fund.db');
-
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
-
-const isNewDatabase = !fs.existsSync(dbPath);
-
-// ─── Open database ────────────────────────────────────────────────────────────
-const db = new DatabaseSync(dbPath);
-
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA foreign_keys = ON');
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT    NOT NULL,
-    email      TEXT    NOT NULL UNIQUE,
-    password   TEXT    NOT NULL,
-    role       TEXT    NOT NULL DEFAULT 'member'
-                       CHECK(role IN ('admin','member')),
-    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS shares_summary (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id        INTEGER NOT NULL UNIQUE,
-    planned_amount REAL    NOT NULL DEFAULT 5850,
-    actual_amount  REAL    NOT NULL DEFAULT 0,
-    updated_at     TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS transactions (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id       INTEGER NOT NULL,
-    date          TEXT    NOT NULL DEFAULT (date('now')),
-    amount_paid   REAL    NOT NULL DEFAULT 0,
-    shares_bought INTEGER NOT NULL DEFAULT 0,
-    created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS welfare_fund (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    total_donation REAL    NOT NULL DEFAULT 0,
-    total_expense  REAL    NOT NULL DEFAULT 0,
-    updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS welfare_transactions (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    date          TEXT    NOT NULL DEFAULT (date('now')),
-    donor_name    TEXT,
-    amount        REAL    NOT NULL DEFAULT 0,
-    type          TEXT    NOT NULL DEFAULT 'donation' CHECK(type IN ('donation', 'expense')),
-    notes         TEXT,
-    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS password_resets (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    email      TEXT    NOT NULL,
-    otp        TEXT    NOT NULL,
-    expires_at TEXT    NOT NULL,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Add type and notes columns to welfare_transactions if they don't exist
-try {
-  db.exec("ALTER TABLE welfare_transactions ADD COLUMN type TEXT NOT NULL DEFAULT 'donation' CHECK(type IN ('donation', 'expense'))");
-} catch (e) {
-  // column already exists
-}
-try {
-  db.exec("ALTER TABLE welfare_transactions ADD COLUMN notes TEXT");
-} catch (e) {
-  // column already exists
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('verbatim');
 }
 
-// Seed welfare_fund row if empty
-const welfareCount = db.prepare('SELECT COUNT(*) AS cnt FROM welfare_fund').get();
-if (welfareCount.cnt === 0) {
-  db.prepare('INSERT INTO welfare_fund (total_donation, total_expense) VALUES (0, 0)').run();
-}
+const { Pool } = require('pg');
 
-// Data Migration: move actual_amount to transactions if transactions table is empty
-const txCount = db.prepare('SELECT COUNT(*) AS cnt FROM transactions').get();
-if (txCount.cnt === 0) {
-  const summaries = db.prepare('SELECT user_id, actual_amount, updated_at FROM shares_summary WHERE actual_amount > 0').all();
-  if (summaries.length > 0) {
-    db.exec('BEGIN');
-    const insertTx = db.prepare('INSERT INTO transactions (user_id, date, amount_paid, shares_bought) VALUES (?, ?, ?, ?)');
-    for (const s of summaries) {
-      // Assuming 1 share = 5850, or just setting shares_bought = 0 for legacy migration since we don't know the exact shares
-      const legacyDate = s.updated_at ? s.updated_at.split(' ')[0] : new Date().toISOString().split('T')[0];
-      insertTx.run(s.user_id, legacyDate, s.actual_amount, 0);
+// Resolve PostgreSQL URI
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:Share!AsenKhai99@db.rirsrckjjdhyhfdxbyis.supabase.co:5432/postgres';
+
+const pool = new Pool({
+  connectionString,
+  ssl: { rejectUnauthorized: false }
+});
+
+const db = {
+  query: (text, params) => pool.query(text, params),
+  connect: () => pool.connect(),
+  pool
+};
+
+// ─── Schema Initialization & Seeding ───────────────────────────────────────────
+(async () => {
+  try {
+    console.log('[DB] Connecting to PostgreSQL/Supabase...');
+    
+    // Core table creations
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id         SERIAL PRIMARY KEY,
+        name       TEXT NOT NULL,
+        email      TEXT NOT NULL UNIQUE,
+        password   TEXT NOT NULL,
+        role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','member')),
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS shares_summary (
+        id             SERIAL PRIMARY KEY,
+        user_id        INTEGER NOT NULL UNIQUE,
+        planned_amount DOUBLE PRECISION NOT NULL DEFAULT 5850,
+        actual_amount  DOUBLE PRECISION NOT NULL DEFAULT 0,
+        updated_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS transactions (
+        id            SERIAL PRIMARY KEY,
+        user_id       INTEGER NOT NULL,
+        date          TEXT NOT NULL DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),
+        amount_paid   DOUBLE PRECISION NOT NULL DEFAULT 0,
+        shares_bought INTEGER NOT NULL DEFAULT 0,
+        created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS welfare_fund (
+        id             SERIAL PRIMARY KEY,
+        total_donation DOUBLE PRECISION NOT NULL DEFAULT 0,
+        total_expense  DOUBLE PRECISION NOT NULL DEFAULT 0,
+        updated_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS welfare_transactions (
+        id            SERIAL PRIMARY KEY,
+        date          TEXT NOT NULL DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),
+        donor_name    TEXT,
+        amount        DOUBLE PRECISION NOT NULL DEFAULT 0,
+        type          TEXT NOT NULL DEFAULT 'donation' CHECK(type IN ('donation', 'expense')),
+        notes         TEXT,
+        created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id         SERIAL PRIMARY KEY,
+        email      TEXT NOT NULL,
+        otp        TEXT NOT NULL,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed welfare_fund row if empty
+    const fundRes = await db.query('SELECT COUNT(*) AS cnt FROM welfare_fund');
+    if (parseInt(fundRes.rows[0].cnt) === 0) {
+      await db.query('INSERT INTO welfare_fund (total_donation, total_expense) VALUES (0, 0)');
+      console.log('[DB] Seeded initial welfare_fund row.');
     }
-    db.exec('COMMIT');
-    console.log(`[DB] Migrated ${summaries.length} legacy share amounts to transactions table.`);
-  }
-}
 
-// Data Migration: move total_donation to welfare_transactions if empty
-const wtxCount = db.prepare('SELECT COUNT(*) AS cnt FROM welfare_transactions').get();
-if (wtxCount.cnt === 0) {
-  const fund = db.prepare('SELECT total_donation FROM welfare_fund LIMIT 1').get();
-  if (fund && fund.total_donation > 0) {
-    db.prepare("INSERT INTO welfare_transactions (date, donor_name, amount) VALUES (date('now'), ?, ?)")
-      .run('Previous Donations (Legacy)', fund.total_donation);
-    console.log(`[DB] Migrated legacy welfare donation of ${fund.total_donation} to welfare_transactions table.`);
-  }
-}
+    // Seed users and shares_summary if users table is empty
+    const userCountRes = await db.query('SELECT COUNT(*) AS cnt FROM users');
+    if (parseInt(userCountRes.rows[0].cnt) === 0) {
+      console.log('[DB] Seeding default members...');
+      const bcrypt = require('bcryptjs');
+      const SALT_ROUNDS = 12;
+      const PLANNED_AMOUNT = 5850;
 
-console.log(`[DB] SQLite ready: ${dbPath}`);
-if (isNewDatabase) {
-  console.log("[DB] Fresh DB detected — run 'npm run seed' to populate members.");
-}
+      const ADMIN = {
+        name: 'Admin', email: 'admin@asenkhaikakalyan.com',
+        password: 'Admin@1234', role: 'admin',
+      };
+
+      const MEMBERS = [
+        { name: 'Anisur Rahman',    email: 'anisur@asenkhaikakalyan.com' },
+        { name: 'Fokhrul Islam',    email: 'fokhrul@asenkhaikakalyan.com' },
+        { name: 'Jahan',            email: 'jahan@asenkhaikakalyan.com' },
+        { name: 'Mithun',           email: 'mithun@asenkhaikakalyan.com' },
+        { name: 'Md Musa',          email: 'musa@asenkhaikakalyan.com' },
+        { name: 'Kabir Hossain',    email: 'kabir@asenkhaikakalyan.com' },
+        { name: 'Rafiqul Islam',    email: 'rafiqul@asenkhaikakalyan.com' },
+        { name: 'Delwar Hossain',   email: 'delwar@asenkhaikakalyan.com' },
+        { name: 'Shahadat Hossain', email: 'shahadat@asenkhaikakalyan.com' },
+        { name: 'Liton Mia',        email: 'liton@asenkhaikakalyan.com' },
+        { name: 'Ariful Islam',     email: 'ariful@asenkhaikakalyan.com' },
+        { name: 'Jahangir Alam',    email: 'jahangir@asenkhaikakalyan.com' },
+        { name: 'Rubel Hossain',    email: 'rubel@asenkhaikakalyan.com' },
+        { name: 'Mamun Rashid',     email: 'mamun@asenkhaikakalyan.com' },
+        { name: 'Sumon Ahmed',      email: 'sumon@asenkhaikakalyan.com' },
+        { name: 'Raju Mia',         email: 'raju@asenkhaikakalyan.com' },
+        { name: 'Belal Hossain',    email: 'belal@asenkhaikakalyan.com' },
+        { name: 'Nazrul Islam',     email: 'nazrul@asenkhaikakalyan.com' },
+      ];
+
+      // Insert Admin
+      const adminHash = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
+      await db.query(
+        'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)',
+        [ADMIN.name, ADMIN.email.toLowerCase().trim(), adminHash, ADMIN.role]
+      );
+      console.log(`  ✅ Admin created → ${ADMIN.email}`);
+
+      // Insert Members
+      const memberHash = bcrypt.hashSync('Member@1234', SALT_ROUNDS);
+      for (const m of MEMBERS) {
+        const insertRes = await db.query(
+          'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
+          [m.name, m.email.toLowerCase().trim(), memberHash, 'member']
+        );
+        const uid = insertRes.rows[0].id;
+        await db.query(
+          'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, $2, 0)',
+          [uid, PLANNED_AMOUNT]
+        );
+        console.log(`  ✅ Member created → ${m.name} (id: ${uid})`);
+      }
+      console.log('[DB] Seeding completed.');
+    }
+
+    console.log('[DB] PostgreSQL/Supabase Tables Checked & Ready.');
+  } catch (err) {
+    console.error('[DB] Initialization failed:', err.message);
+  }
+})();
 
 module.exports = db;

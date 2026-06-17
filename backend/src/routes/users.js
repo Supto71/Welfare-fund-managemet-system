@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // ── PUT /api/users/me/name ────────────────────────────────────────────────────
-router.put('/me/name', (req, res) => {
+router.put('/me/name', async (req, res) => {
   const { name } = req.body;
 
   if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -17,7 +17,7 @@ router.put('/me/name', (req, res) => {
 
   try {
     const newName = name.trim();
-    db.prepare('UPDATE users SET name = ? WHERE id = ?').run(newName, req.user.id);
+    await db.query('UPDATE users SET name = $1 WHERE id = $2', [newName, req.user.id]);
     
     return res.status(200).json({ 
       success: true, 
@@ -31,10 +31,10 @@ router.put('/me/name', (req, res) => {
 });
 
 // ── GET /api/users/names ──────────────────────────────────────────────────────
-router.get('/names', (req, res) => {
+router.get('/names', async (req, res) => {
   try {
-    const users = db.prepare('SELECT name FROM users ORDER BY name ASC').all();
-    return res.status(200).json({ success: true, data: users.map(u => u.name) });
+    const result = await db.query('SELECT name FROM users ORDER BY name ASC');
+    return res.status(200).json({ success: true, data: result.rows.map(u => u.name) });
   } catch (err) {
     console.error('[Users/Names]', err.message);
     return res.status(500).json({ success: false, message: 'Failed to fetch member names.' });

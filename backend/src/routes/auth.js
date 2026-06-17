@@ -18,7 +18,7 @@ const signToken = (user) =>
   );
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
   const role = 'member';
 
@@ -28,59 +28,78 @@ router.post('/register', (req, res) => {
   if (password.length < 6)
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
-  if (existing)
-    return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
-
   try {
+    const existingRes = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existingRes.rows[0])
+      return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+
     const hashed = bcrypt.hashSync(password, SALT_ROUNDS);
 
-    db.exec('BEGIN');
-    const result = db
-      .prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)')
-      .run(name, email.toLowerCase().trim(), hashed, role);
+    const client = await db.connect();
+    let userId;
+    try {
+      await client.query('BEGIN');
+      const insertUserRes = await client.query(
+        'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
+        [name, email.toLowerCase().trim(), hashed, role]
+      );
+      userId = insertUserRes.rows[0].id;
 
-    const userId = Number(result.lastInsertRowid);
-    db.prepare('INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES (?, 5850, 0)')
-      .run(userId);
-    db.exec('COMMIT');
+      await client.query(
+        'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, 5850, 0)',
+        [userId]
+      );
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
 
-    const user  = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(userId);
+    const userRes = await db.query('SELECT id, name, email, role FROM users WHERE id = $1', [userId]);
+    const user = userRes.rows[0];
     const token = signToken(user);
 
     return res.status(201).json({ success: true, message: 'Registration successful.', token, user });
   } catch (err) {
-    db.exec('ROLLBACK');
     console.error('[Auth/Register]', err.message);
     return res.status(500).json({ success: false, message: 'Server error during registration.' });
   }
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password)
     return res.status(400).json({ success: false, message: 'email and password are required.' });
 
-  const user = db
-    .prepare('SELECT id, name, email, password, role FROM users WHERE email = ?')
-    .get(email.toLowerCase().trim());
+  try {
+    const userRes = await db.query(
+      'SELECT id, name, email, password, role FROM users WHERE email = $1',
+      [email.toLowerCase().trim()]
+    );
+    const user = userRes.rows[0];
 
-  if (!user)
-    return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    if (!user)
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
-  if (!bcrypt.compareSync(password, user.password))
-    return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    if (!bcrypt.compareSync(password, user.password))
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
 
-  const token = signToken(user);
+    const token = signToken(user);
 
-  return res.status(200).json({
-    success: true,
-    message: 'Login successful.',
-    token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
-  });
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
+  } catch (err) {
+    console.error('[Auth/Login]', err.message);
+    return res.status(500).json({ success: false, message: 'Server error during login.' });
+  }
 });
 
 // ── MAIL TRANSPORTER ──────────────────────────────────────────────────────────
@@ -102,19 +121,22 @@ router.post('/forgot-password', async (req, res) => {
   if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
 
   const emailClean = email.toLowerCase().trim();
-  const user = db.prepare('SELECT id, name FROM users WHERE email = ?').get(emailClean);
-  if (!user) {
-    // Return success to prevent email enumeration
-    return res.status(200).json({ success: true, message: 'If this email exists, an OTP has been sent.' });
-  }
-
-  // Generate 6-digit OTP
-  const otp = crypto.randomInt(100000, 999999).toString();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
-
   try {
-    db.prepare('INSERT INTO password_resets (email, otp, expires_at) VALUES (?, ?, ?)')
-      .run(emailClean, otp, expiresAt);
+    const userRes = await db.query('SELECT id, name FROM users WHERE email = $1', [emailClean]);
+    const user = userRes.rows[0];
+    if (!user) {
+      // Return success to prevent email enumeration
+      return res.status(200).json({ success: true, message: 'If this email exists, an OTP has been sent.' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
+
+    await db.query(
+      'INSERT INTO password_resets (email, otp, expires_at) VALUES ($1, $2, $3)',
+      [emailClean, otp, expiresAt]
+    );
 
     // Send Email
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -144,7 +166,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // ── POST /api/auth/reset-password ─────────────────────────────────────────────
-router.post('/reset-password', (req, res) => {
+router.post('/reset-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
   if (!email || !otp || !newPassword) {
@@ -157,28 +179,38 @@ router.post('/reset-password', (req, res) => {
 
   const emailClean = email.toLowerCase().trim();
 
-  // Find valid OTP
-  const record = db.prepare('SELECT id, expires_at FROM password_resets WHERE email = ? AND otp = ? ORDER BY id DESC LIMIT 1')
-    .get(emailClean, otp);
-
-  if (!record) {
-    return res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
-  }
-
-  if (new Date(record.expires_at) < new Date()) {
-    return res.status(400).json({ success: false, message: 'OTP has expired.' });
-  }
-
   try {
+    // Find valid OTP
+    const recordRes = await db.query(
+      'SELECT id, expires_at FROM password_resets WHERE email = $1 AND otp = $2 ORDER BY id DESC LIMIT 1',
+      [emailClean, otp]
+    );
+    const record = recordRes.rows[0];
+
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
+    }
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    }
+
     const hashed = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-    db.exec('BEGIN');
-    db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hashed, emailClean);
-    db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailClean);
-    db.exec('COMMIT');
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('UPDATE users SET password = $1 WHERE email = $2', [hashed, emailClean]);
+      await client.query('DELETE FROM password_resets WHERE email = $1', [emailClean]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
 
     return res.status(200).json({ success: true, message: 'Password reset successfully. You can now login.' });
   } catch (err) {
-    db.exec('ROLLBACK');
     console.error('[Reset Password Error]', err);
     return res.status(500).json({ success: false, message: 'Server error during password reset.' });
   }

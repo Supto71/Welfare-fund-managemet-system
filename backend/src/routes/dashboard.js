@@ -7,71 +7,77 @@ const { authenticate } = require('../middleware/auth');
 const router = express.Router();
 
 // ── GET /api/dashboard/summary ────────────────────────────────────────────────
-router.get('/summary', authenticate, (req, res) => {
+router.get('/summary', authenticate, async (req, res) => {
   try {
     const selectedMonth = req.query.month; // e.g. "2026-06" or undefined/all
 
-    const welfare = db.prepare('SELECT total_expense FROM welfare_fund LIMIT 1').get();
-    const totalExpense   = welfare ? welfare.total_expense  : 0;
+    const welfareRes = await db.query('SELECT total_expense FROM welfare_fund LIMIT 1');
+    const welfare = welfareRes.rows[0];
+    const totalExpense   = welfare ? parseFloat(welfare.total_expense) : 0;
 
-    const wtx = db.prepare('SELECT SUM(amount) AS total_donation FROM welfare_transactions').get();
-    const totalDonation = wtx ? (wtx.total_donation || 0) : 0;
+    const wtxRes = await db.query('SELECT SUM(amount) AS total_donation FROM welfare_transactions');
+    const wtx = wtxRes.rows[0];
+    const totalDonation = wtx ? (parseFloat(wtx.total_donation) || 0) : 0;
     const welfareBalance = totalDonation - totalExpense;
 
     let sharesAgg;
     if (selectedMonth && selectedMonth !== 'all') {
-      sharesAgg = db.prepare(`
+      const sharesAggRes = await db.query(`
         SELECT
           COALESCE(SUM(amount_paid), 0) AS total_amount,
-          COUNT(DISTINCT user_id) AS totalMembers,
+          COUNT(DISTINCT user_id) AS total_members,
           COALESCE(SUM(shares_bought), 0) AS total_shares_sold,
           COALESCE(SUM(amount_paid), 0) AS monthly_amount
         FROM transactions
-        WHERE strftime('%Y-%m', date) = ?
-      `).get(selectedMonth);
+        WHERE SUBSTRING(date, 1, 7) = $1
+      `, [selectedMonth]);
+      sharesAgg = sharesAggRes.rows[0];
     } else {
-      sharesAgg = db.prepare(`
+      const sharesAggRes = await db.query(`
         SELECT
           COALESCE(SUM(amount_paid), 0) AS total_amount,
-          COUNT(DISTINCT user_id) AS totalMembers,
+          COUNT(DISTINCT user_id) AS total_members,
           COALESCE(SUM(shares_bought), 0) AS total_shares_sold,
-          COALESCE(SUM(CASE WHEN strftime('%Y-%m', date) = strftime('%Y-%m', 'now') THEN amount_paid ELSE 0 END), 0) AS monthly_amount
+          COALESCE(SUM(CASE WHEN SUBSTRING(date, 1, 7) = TO_CHAR(CURRENT_DATE, 'YYYY-MM') THEN amount_paid ELSE 0 END), 0) AS monthly_amount
         FROM transactions
-      `).get();
+      `);
+      sharesAgg = sharesAggRes.rows[0];
     }
 
-    const monthlyHistory = db.prepare(`
+    const monthlyHistoryRes = await db.query(`
       SELECT 
-        strftime('%Y-%m', date) AS month, 
+        SUBSTRING(date, 1, 7) AS month, 
         COALESCE(SUM(amount_paid), 0) AS total_amount, 
         COALESCE(SUM(shares_bought), 0) AS total_shares 
       FROM transactions 
-      GROUP BY strftime('%Y-%m', date)
+      GROUP BY SUBSTRING(date, 1, 7)
       ORDER BY month DESC
-    `).all();
+    `);
+    const monthlyHistory = monthlyHistoryRes.rows;
 
     // Aggregated members list based on month query
     let members;
     if (selectedMonth && selectedMonth !== 'all') {
-      members = db.prepare(`
+      const membersRes = await db.query(`
         SELECT 
             u.id, 
             u.name,
             u.email,
             u.role,
             COALESCE(ss.planned_amount, 5850) AS planned_amount,
-            COALESCE(SUM(CASE WHEN strftime('%Y-%m', t.date) = ? THEN t.shares_bought ELSE 0 END), 0) AS individual_total_shares,
-            COALESCE(SUM(CASE WHEN strftime('%Y-%m', t.date) = ? THEN t.amount_paid ELSE 0 END), 0) AS individual_monthly_deposit,
-            COALESCE(SUM(CASE WHEN strftime('%Y-%m', t.date) = ? THEN t.amount_paid ELSE 0 END), 0) AS individual_total_deposit
+            COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = $1 THEN t.shares_bought ELSE 0 END), 0) AS individual_total_shares,
+            COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = $2 THEN t.amount_paid ELSE 0 END), 0) AS individual_monthly_deposit,
+            COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = $3 THEN t.amount_paid ELSE 0 END), 0) AS individual_total_deposit
         FROM users u
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
-        GROUP BY u.id
+        GROUP BY u.id, ss.planned_amount
         ORDER BY u.id ASC
         LIMIT 18
-      `).all(selectedMonth, selectedMonth, selectedMonth);
+      `, [selectedMonth, selectedMonth, selectedMonth]);
+      members = membersRes.rows;
     } else {
-      members = db.prepare(`
+      const membersRes = await db.query(`
         SELECT 
             u.id, 
             u.name,
@@ -79,31 +85,54 @@ router.get('/summary', authenticate, (req, res) => {
             u.role,
             COALESCE(ss.planned_amount, 5850) AS planned_amount,
             COALESCE(SUM(t.shares_bought), 0) AS individual_total_shares,
-            COALESCE(SUM(CASE WHEN strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now') THEN t.amount_paid ELSE 0 END), 0) AS individual_monthly_deposit,
+            COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = TO_CHAR(CURRENT_DATE, 'YYYY-MM') THEN t.amount_paid ELSE 0 END), 0) AS individual_monthly_deposit,
             COALESCE(SUM(t.amount_paid), 0) AS individual_total_deposit
         FROM users u
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
-        GROUP BY u.id
+        GROUP BY u.id, ss.planned_amount
         ORDER BY u.id ASC
         LIMIT 18
-      `).all();
+      `);
+      members = membersRes.rows;
     }
+
+    // Convert values to numbers for type safety
+    const totalSavings = parseFloat(sharesAgg.total_amount) || 0;
+    const soldShares = parseInt(sharesAgg.total_shares_sold) || 0;
+    const memberCount = parseInt(sharesAgg.total_members) || 0;
+    const monthlyAmount = parseFloat(sharesAgg.monthly_amount) || 0;
+
+    // Convert members' deposit types
+    const mappedMembers = members.map(m => ({
+      ...m,
+      planned_amount: parseFloat(m.planned_amount),
+      individual_total_shares: parseInt(m.individual_total_shares),
+      individual_monthly_deposit: parseFloat(m.individual_monthly_deposit),
+      individual_total_deposit: parseFloat(m.individual_total_deposit)
+    }));
+
+    // Convert monthlyHistory types
+    const mappedMonthlyHistory = monthlyHistory.map(h => ({
+      ...h,
+      total_amount: parseFloat(h.total_amount),
+      total_shares: parseInt(h.total_shares)
+    }));
 
     return res.status(200).json({
       success: true,
       data: {
-        totalSavings:  sharesAgg.total_amount, // keeping totalSavings for backward compatibility if needed, or just replace
-        total_amount:  sharesAgg.total_amount,
-        soldShares:    sharesAgg.total_shares_sold,
-        total_shares_sold: sharesAgg.total_shares_sold,
-        monthly_amount: sharesAgg.monthly_amount,
+        totalSavings,
+        total_amount:  totalSavings,
+        soldShares,
+        total_shares_sold: soldShares,
+        monthly_amount: monthlyAmount,
         welfareBalance,
         totalDonation,
         totalExpense,
-        memberCount:   sharesAgg.totalMembers,
-        members,
-        monthlyHistory,
+        memberCount,
+        members: mappedMembers,
+        monthlyHistory: mappedMonthlyHistory,
       },
     });
   } catch (err) {
@@ -113,7 +142,7 @@ router.get('/summary', authenticate, (req, res) => {
 });
 
 // ── GET /api/dashboard/member/:id/history ─────────────────────────────────────
-router.get('/member/:id/history', authenticate, (req, res) => {
+router.get('/member/:id/history', authenticate, async (req, res) => {
   try {
     const userId = req.params.id;
 
@@ -122,23 +151,33 @@ router.get('/member/:id/history', authenticate, (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const transactions = db.prepare(`
+    const transactionsRes = await db.query(`
       SELECT date, amount_paid, shares_bought 
       FROM transactions 
-      WHERE user_id = ? 
+      WHERE user_id = $1 
       ORDER BY date DESC
-    `).all(userId);
+    `, [userId]);
+    const transactions = transactionsRes.rows.map(t => ({
+      ...t,
+      amount_paid: parseFloat(t.amount_paid),
+      shares_bought: parseInt(t.shares_bought)
+    }));
 
-    const monthlySummary = db.prepare(`
+    const monthlySummaryRes = await db.query(`
       SELECT 
-        strftime('%Y-%m', date) AS month, 
+        SUBSTRING(date, 1, 7) AS month, 
         SUM(amount_paid) AS total_paid, 
         SUM(shares_bought) AS total_shares
       FROM transactions 
-      WHERE user_id = ? 
-      GROUP BY strftime('%Y-%m', date)
+      WHERE user_id = $1 
+      GROUP BY SUBSTRING(date, 1, 7)
       ORDER BY month DESC
-    `).all(userId);
+    `, [userId]);
+    const monthlySummary = monthlySummaryRes.rows.map(m => ({
+      ...m,
+      total_paid: parseFloat(m.total_paid),
+      total_shares: parseInt(m.total_shares)
+    }));
 
     return res.status(200).json({
       success: true,

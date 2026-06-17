@@ -8,94 +8,127 @@ const router = express.Router();
 router.use(authenticate, requireRole('admin'));
 
 // ── POST /api/admin/add-transaction ──────────────────────────────────────────
-router.post('/add-transaction', (req, res) => {
+router.post('/add-transaction', async (req, res) => {
   const { userId, date, amount_paid, shares_bought } = req.body;
 
   if (!userId || date === undefined || amount_paid === undefined || shares_bought === undefined)
     return res.status(400).json({ success: false, message: 'userId, date, amount_paid, and shares_bought are required.' });
 
-  const targetUser = db.prepare('SELECT id, name FROM users WHERE id = ?').get(userId);
-  if (!targetUser)
-    return res.status(404).json({ success: false, message: 'User not found.' });
-
   try {
-    db.exec('BEGIN');
+    const targetUserRes = await db.query('SELECT id, name FROM users WHERE id = $1', [userId]);
+    const targetUser = targetUserRes.rows[0];
+    if (!targetUser)
+      return res.status(404).json({ success: false, message: 'User not found.' });
 
-    // Insert into transactions
-    db.prepare('INSERT INTO transactions (user_id, date, amount_paid, shares_bought) VALUES (?, ?, ?, ?)')
-      .run(userId, date, Number(amount_paid), Number(shares_bought));
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
 
-    // For backwards compatibility and the global shares_summary logic, keep actual_amount updated
-    const totalDeposit = db.prepare('SELECT SUM(amount_paid) AS sum FROM transactions WHERE user_id = ?').get(userId).sum || 0;
-    
-    const existing = db.prepare('SELECT id FROM shares_summary WHERE user_id = ?').get(userId);
-    if (existing) {
-      db.prepare(`UPDATE shares_summary SET actual_amount = ?, updated_at = datetime('now') WHERE user_id = ?`)
-        .run(totalDeposit, userId);
-    } else {
-      db.prepare('INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES (?, 5850, ?)')
-        .run(userId, totalDeposit);
+      // Insert into transactions
+      await client.query(
+        'INSERT INTO transactions (user_id, date, amount_paid, shares_bought) VALUES ($1, $2, $3, $4)',
+        [userId, date, Number(amount_paid), Number(shares_bought)]
+      );
+
+      // Fetch sum of amount_paid for user
+      const totalDepositRes = await client.query('SELECT SUM(amount_paid) AS sum FROM transactions WHERE user_id = $1', [userId]);
+      const totalDeposit = parseFloat(totalDepositRes.rows[0].sum) || 0;
+      
+      const existingRes = await client.query('SELECT id FROM shares_summary WHERE user_id = $1', [userId]);
+      const existing = existingRes.rows[0];
+
+      if (existing) {
+        await client.query(
+          `UPDATE shares_summary SET actual_amount = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
+          [totalDeposit, userId]
+        );
+      } else {
+        await client.query(
+          'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, 5850, $2)',
+          [userId, totalDeposit]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-
-    db.exec('COMMIT');
 
     return res.status(200).json({
       success: true,
       message: `Transaction added for "${targetUser.name}".`,
     });
   } catch (err) {
-    db.exec('ROLLBACK');
     console.error('[Admin/AddTransaction]', err.message);
     return res.status(500).json({ success: false, message: 'Failed to add transaction.' });
   }
 });
 
 // ── PUT /api/admin/set-transaction ───────────────────────────────────────────
-router.put('/set-transaction', (req, res) => {
+router.put('/set-transaction', async (req, res) => {
   const { userId, amount_paid, shares_bought } = req.body;
 
   if (!userId || amount_paid === undefined || shares_bought === undefined)
     return res.status(400).json({ success: false, message: 'userId, amount_paid, and shares_bought are required.' });
 
-  const targetUser = db.prepare('SELECT id, name FROM users WHERE id = ?').get(userId);
-  if (!targetUser)
-    return res.status(404).json({ success: false, message: 'User not found.' });
-
   try {
-    db.exec('BEGIN');
+    const targetUserRes = await db.query('SELECT id, name FROM users WHERE id = $1', [userId]);
+    const targetUser = targetUserRes.rows[0];
+    if (!targetUser)
+      return res.status(404).json({ success: false, message: 'User not found.' });
 
-    // Reset history: Delete all previous transactions
-    db.prepare('DELETE FROM transactions WHERE user_id = ?').run(userId);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
 
-    // Insert new baseline transaction
-    db.prepare("INSERT INTO transactions (user_id, date, amount_paid, shares_bought) VALUES (?, date('now'), ?, ?)")
-      .run(userId, Number(amount_paid), Number(shares_bought));
+      // Reset history: Delete all previous transactions
+      await client.query('DELETE FROM transactions WHERE user_id = $1', [userId]);
 
-    // Update shares_summary
-    const existing = db.prepare('SELECT id FROM shares_summary WHERE user_id = ?').get(userId);
-    if (existing) {
-      db.prepare(`UPDATE shares_summary SET actual_amount = ?, updated_at = datetime('now') WHERE user_id = ?`)
-        .run(Number(amount_paid), userId);
-    } else {
-      db.prepare('INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES (?, 5850, ?)')
-        .run(userId, Number(amount_paid));
+      // Insert new baseline transaction
+      await client.query(
+        "INSERT INTO transactions (user_id, date, amount_paid, shares_bought) VALUES ($1, TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'), $2, $3)",
+        [userId, Number(amount_paid), Number(shares_bought)]
+      );
+
+      // Update shares_summary
+      const existingRes = await client.query('SELECT id FROM shares_summary WHERE user_id = $1', [userId]);
+      const existing = existingRes.rows[0];
+
+      if (existing) {
+        await client.query(
+          `UPDATE shares_summary SET actual_amount = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
+          [Number(amount_paid), userId]
+        );
+      } else {
+        await client.query(
+          'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, 5850, $2)',
+          [userId, Number(amount_paid)]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-
-    db.exec('COMMIT');
 
     return res.status(200).json({
       success: true,
       message: `Data reset and updated for "${targetUser.name}".`,
     });
   } catch (err) {
-    db.exec('ROLLBACK');
     console.error('[Admin/SetTransaction]', err.message);
     return res.status(500).json({ success: false, message: 'Failed to reset transaction: ' + err.message });
   }
 });
 
 // ── PUT /api/admin/update-welfare ─────────────────────────────────────────────
-router.put('/update-welfare', (req, res) => {
+router.put('/update-welfare', async (req, res) => {
   const { field, amount, mode = 'set' } = req.body;
 
   const ALLOWED = ['total_expense'];
@@ -111,18 +144,27 @@ router.put('/update-welfare', (req, res) => {
 
   try {
     const sql = mode === 'add'
-      ? `UPDATE welfare_fund SET ${field} = ${field} + ?, updated_at = datetime('now')`
-      : `UPDATE welfare_fund SET ${field} = ?, updated_at = datetime('now')`;
+      ? `UPDATE welfare_fund SET ${field} = ${field} + $1, updated_at = CURRENT_TIMESTAMP`
+      : `UPDATE welfare_fund SET ${field} = $1, updated_at = CURRENT_TIMESTAMP`;
 
-    db.prepare(sql).run(parsed);
+    await db.query(sql, [parsed]);
 
-    const updated      = db.prepare('SELECT total_donation, total_expense, updated_at FROM welfare_fund LIMIT 1').get();
-    const welfareBalance = updated.total_donation - updated.total_expense;
+    const updatedRes = await db.query('SELECT total_donation, total_expense, updated_at FROM welfare_fund LIMIT 1');
+    const updated = updatedRes.rows[0];
+    
+    const totalDonation = parseFloat(updated.total_donation) || 0;
+    const totalExpense = parseFloat(updated.total_expense) || 0;
+    const welfareBalance = totalDonation - totalExpense;
 
     return res.status(200).json({
       success: true,
       message: `Welfare "${field}" updated.`,
-      data: { ...updated, welfareBalance },
+      data: {
+        total_donation: totalDonation,
+        total_expense: totalExpense,
+        updated_at: updated.updated_at,
+        welfareBalance
+      },
     });
   } catch (err) {
     console.error('[Admin/UpdateWelfare]', err.message);
@@ -131,7 +173,7 @@ router.put('/update-welfare', (req, res) => {
 });
 
 // ── POST /api/admin/welfare-transaction ──────────────────────────────────────────
-router.post('/welfare-transaction', (req, res) => {
+router.post('/welfare-transaction', async (req, res) => {
   const { date, donor_name, amount, type = 'donation', notes } = req.body;
 
   if (!date || amount === undefined) {
@@ -152,8 +194,10 @@ router.post('/welfare-transaction', (req, res) => {
   }
 
   try {
-    db.prepare("INSERT INTO welfare_transactions (date, donor_name, amount, type, notes) VALUES (?, ?, ?, ?, ?)")
-      .run(date, type === 'donation' ? donor_name : '', parsedAmount, type, notes || '');
+    await db.query(
+      "INSERT INTO welfare_transactions (date, donor_name, amount, type, notes) VALUES ($1, $2, $3, $4, $5)",
+      [date, type === 'donation' ? donor_name : '', parsedAmount, type, notes || '']
+    );
 
     return res.status(200).json({ success: true, message: 'Welfare transaction added successfully.' });
   } catch (err) {
@@ -163,12 +207,12 @@ router.post('/welfare-transaction', (req, res) => {
 });
 
 // ── DELETE /api/admin/welfare-transaction/:id ────────────────────────────────────
-router.delete('/welfare-transaction/:id', (req, res) => {
+router.delete('/welfare-transaction/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = db.prepare("DELETE FROM welfare_transactions WHERE id = ?").run(id);
-    if (result.changes === 0) {
+    const result = await db.query("DELETE FROM welfare_transactions WHERE id = $1", [id]);
+    if (result.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Transaction not found.' });
     }
     return res.status(200).json({ success: true, message: 'Welfare transaction deleted successfully.' });
@@ -179,27 +223,35 @@ router.delete('/welfare-transaction/:id', (req, res) => {
 });
 
 // ── PUT /api/admin/update-member ────────────────────────────────────────────────
-router.put('/update-member', (req, res) => {
+router.put('/update-member', async (req, res) => {
   const { userId, name, planned_amount } = req.body;
   if (!userId) return res.status(400).json({ success: false, message: 'userId is required.' });
 
   try {
-    db.exec('BEGIN');
-    if (name !== undefined) {
-      db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name.trim(), userId);
-    }
-    if (planned_amount !== undefined) {
-      const existing = db.prepare('SELECT id FROM shares_summary WHERE user_id = ?').get(userId);
-      if (existing) {
-        db.prepare("UPDATE shares_summary SET planned_amount = ? WHERE user_id = ?").run(Number(planned_amount), userId);
-      } else {
-        db.prepare('INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES (?, ?, 0)').run(userId, Number(planned_amount));
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      if (name !== undefined) {
+        await client.query('UPDATE users SET name = $1 WHERE id = $2', [name.trim(), userId]);
       }
+      if (planned_amount !== undefined) {
+        const existingRes = await client.query('SELECT id FROM shares_summary WHERE user_id = $1', [userId]);
+        const existing = existingRes.rows[0];
+        if (existing) {
+          await client.query("UPDATE shares_summary SET planned_amount = $1 WHERE user_id = $2", [Number(planned_amount), userId]);
+        } else {
+          await client.query('INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, $2, 0)', [userId, Number(planned_amount)]);
+        }
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-    db.exec('COMMIT');
     return res.status(200).json({ success: true, message: 'Member settings updated successfully.' });
   } catch (err) {
-    db.exec('ROLLBACK');
     console.error('[Admin/UpdateMember]', err.message);
     return res.status(500).json({ success: false, message: 'Failed to update member settings.' });
   }

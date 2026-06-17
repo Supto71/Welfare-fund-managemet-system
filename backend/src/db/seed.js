@@ -34,71 +34,84 @@ const MEMBERS = [
   { name: 'Nazrul Islam',     email: 'nazrul@asenkhaikakalyan.com' },
 ];
 
-const stmtInsertUser = db.prepare(
-  'INSERT OR IGNORE INTO users (name, email, password, role) VALUES (?, ?, ?, ?)'
-);
-const stmtInsertShare = db.prepare(
-  'INSERT OR IGNORE INTO shares_summary (user_id, planned_amount, actual_amount) VALUES (?, ?, 0)'
-);
-const stmtFindUser  = db.prepare('SELECT id FROM users WHERE email = ?');
-const stmtFindShare = db.prepare('SELECT id FROM shares_summary WHERE user_id = ?');
+(async () => {
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  🌱  আসেন খাই কল্যাণ তহবিল — Database Seed (PostgreSQL)');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('  🌱  আসেন খাই কল্যাণ তহবিল — Database Seed');
-console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  let seeded = 0, skipped = 0, shares = 0;
 
-let seeded = 0, skipped = 0, shares = 0;
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
 
-db.exec('BEGIN');
-try {
-  // ── Admin ──────────────────────────────────────────────────
-  if (!stmtFindUser.get(ADMIN.email)) {
-    const hashed = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
-    stmtInsertUser.run(ADMIN.name, ADMIN.email, hashed, ADMIN.role);
-    console.log(`  ✅  Admin created  →  ${ADMIN.email}`);
-    seeded++;
-  } else {
-    console.log(`  ⏭️   Admin exists   →  ${ADMIN.email}`);
-    skipped++;
-  }
-
-  // ── Members ────────────────────────────────────────────────
-  const defaultHash = bcrypt.hashSync('Member@1234', SALT_ROUNDS);
-
-  for (const m of MEMBERS) {
-    let userRow = stmtFindUser.get(m.email);
-
-    if (!userRow) {
-      const res = stmtInsertUser.run(m.name, m.email, defaultHash, 'member');
-      const uid = Number(res.lastInsertRowid);
-      stmtInsertShare.run(uid, PLANNED_AMOUNT);
-      console.log(`  ✅  Member created  →  ${m.name.padEnd(20)} (id: ${uid})`);
-      seeded++; shares++;
+    // ── Admin ──────────────────────────────────────────────────
+    const adminCheckRes = await client.query('SELECT id FROM users WHERE email = $1', [ADMIN.email]);
+    if (adminCheckRes.rows.length === 0) {
+      const hashed = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
+      await client.query(
+        'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)',
+        [ADMIN.name, ADMIN.email.toLowerCase().trim(), hashed, ADMIN.role]
+      );
+      console.log(`  ✅  Admin created  →  ${ADMIN.email}`);
+      seeded++;
     } else {
-      if (!stmtFindShare.get(userRow.id)) {
-        stmtInsertShare.run(userRow.id, PLANNED_AMOUNT);
-        shares++;
-        console.log(`  🔧  Share row added →  ${m.name}`);
+      console.log(`  ⏭️   Admin exists   →  ${ADMIN.email}`);
+      skipped++;
+    }
+
+    // ── Members ────────────────────────────────────────────────
+    const defaultHash = bcrypt.hashSync('Member@1234', SALT_ROUNDS);
+
+    for (const m of MEMBERS) {
+      const userCheckRes = await client.query('SELECT id FROM users WHERE email = $1', [m.email]);
+      const userRow = userCheckRes.rows[0];
+
+      if (!userRow) {
+        const insertUserRes = await client.query(
+          'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
+          [m.name, m.email.toLowerCase().trim(), defaultHash, 'member']
+        );
+        const uid = insertUserRes.rows[0].id;
+        await client.query(
+          'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, $2, 0)',
+          [uid, PLANNED_AMOUNT]
+        );
+        console.log(`  ✅  Member created  →  ${m.name.padEnd(20)} (id: ${uid})`);
+        seeded++; shares++;
       } else {
-        console.log(`  ⏭️   Already exists →  ${m.name}`);
-        skipped++;
+        const shareCheckRes = await client.query('SELECT id FROM shares_summary WHERE user_id = $1', [userRow.id]);
+        if (shareCheckRes.rows.length === 0) {
+          await client.query(
+            'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, $2, 0)',
+            [userRow.id, PLANNED_AMOUNT]
+          );
+          shares++;
+          console.log(`  🔧  Share row added →  ${m.name}`);
+        } else {
+          console.log(`  ⏭️   Already exists →  ${m.name}`);
+          skipped++;
+        }
       }
     }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('\n  ❌  Seed failed:', err.message);
+    process.exit(1);
+  } finally {
+    client.release();
   }
 
-  db.exec('COMMIT');
-} catch (err) {
-  db.exec('ROLLBACK');
-  console.error('\n  ❌  Seed failed:', err.message);
-  process.exit(1);
-}
-
-console.log('\n──────────────────────────────────────────────────────');
-console.log(`  📊  Users created  : ${seeded}`);
-console.log(`  📊  Shares created : ${shares}`);
-console.log(`  📊  Skipped        : ${skipped}`);
-console.log('──────────────────────────────────────────────────────');
-console.log('\n  Default passwords:');
-console.log('       Admin   →  Admin@1234');
-console.log('       Members →  Member@1234');
-console.log('\n  ⚠️  Change passwords before production!\n');
+  console.log('\n──────────────────────────────────────────────────────');
+  console.log(`  📊  Users created  : ${seeded}`);
+  console.log(`  📊  Shares created : ${shares}`);
+  console.log(`  📊  Skipped        : ${skipped}`);
+  console.log('──────────────────────────────────────────────────────');
+  console.log('\n  Default passwords:');
+  console.log('       Admin   →  Admin@1234');
+  console.log('       Members →  Member@1234');
+  console.log('\n  ⚠️  Change passwords before production!\n');
+  process.exit(0);
+})();
