@@ -7,6 +7,15 @@ import CurrencySymbol from '../components/CurrencySymbol'
 
 const fmt = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+export const formatMonthName = (monthStr) => {
+  if (!monthStr || monthStr === 'all') return 'সব সময় (All Time)'
+  const [year, month] = monthStr.split('-')
+  const date = new Date(year, parseInt(month) - 1, 1)
+  const bn = date.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long' })
+  const en = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  return `${bn} (${en})`
+}
+
 export default function WelfareFundPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
@@ -17,6 +26,8 @@ export default function WelfareFundPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [search, setSearch] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('all')
+  const [filterType, setFilterType] = useState('all') // 'all', 'donation', 'expense'
   const [txType, setTxType] = useState('donation') // 'donation' or 'expense'
   const [notes, setNotes] = useState('')
   
@@ -76,7 +87,7 @@ export default function WelfareFundPage() {
         donor_name: txType === 'donation' ? donorName.trim() : '',
         amount: Number(amount),
         type: txType,
-        notes: txType === 'expense' ? notes.trim() : ''
+        notes: notes.trim()
       })
       setShowModal(false)
       setDonorName('')
@@ -109,10 +120,29 @@ export default function WelfareFundPage() {
     ...transactions.map(t => t.donor_name || '')
   ].filter(Boolean)))
 
-  const filteredTransactions = transactions.filter(t =>
-    (t.donor_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (t.notes || '').toLowerCase().includes(search.toLowerCase())
-  )
+  // Extract unique months (YYYY-MM format) from transactions
+  const uniqueMonths = Array.from(new Set(
+    transactions
+      .map(t => t.date ? t.date.substring(0, 7) : '')
+      .filter(Boolean)
+  )).sort((a, b) => b.localeCompare(a))
+
+  const filteredTransactions = transactions.filter(t => {
+    // 1. Month filter
+    if (selectedMonth !== 'all' && (!t.date || !t.date.startsWith(selectedMonth))) {
+      return false
+    }
+    // 2. Type filter
+    if (filterType !== 'all' && t.type !== filterType) {
+      return false
+    }
+    // 3. Search filter
+    const term = search.toLowerCase()
+    return (
+      (t.donor_name || '').toLowerCase().includes(term) ||
+      (t.notes || '').toLowerCase().includes(term)
+    )
+  })
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -138,11 +168,56 @@ export default function WelfareFundPage() {
               <svg className="w-5 h-5 text-brand-gold" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
               তহবিলের রেকর্ডসমূহ (Welfare Fund Records)
             </h2>
-            <p className="text-sm text-gray-500 mt-1">তারিখ অনুযায়ী সকল অনুদানের বিবরণ (Donations records listed by date)</p>
+            <p className="text-sm text-gray-500 mt-1">
+              তারিখ অনুযায়ী সকল লেনদেনের বিবরণ (Welfare transactions listed by date)
+              {selectedMonth !== 'all' && ` · মাস: ${formatMonthName(selectedMonth)}`}
+              {filterType !== 'all' && ` · ধরণ: ${filterType === 'donation' ? 'চাঁদা' : 'খরচ'}`}
+            </p>
           </div>
           
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 no-print w-full sm:w-auto">
-            {/* Donor Search Box */}
+            {/* Month Filter Dropdown */}
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="pl-3 pr-8 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy bg-white font-semibold text-gray-700 w-full sm:w-44 cursor-pointer appearance-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundSize: '1.25rem 1.25rem',
+                  backgroundRepeat: 'no-repeat'
+                }}
+              >
+                <option value="all">সব সময় (All Time)</option>
+                {uniqueMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {formatMonthName(m)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Type Filter Dropdown */}
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="pl-3 pr-8 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy bg-white font-semibold text-gray-700 w-full sm:w-44 cursor-pointer appearance-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundSize: '1.25rem 1.25rem',
+                  backgroundRepeat: 'no-repeat'
+                }}
+              >
+                <option value="all">সকল রেকর্ড (All Types)</option>
+                <option value="donation">শুধুমাত্র চাঁদা (Donations)</option>
+                <option value="expense">শুধুমাত্র খরচ (Expenses)</option>
+              </select>
+            </div>
+
+            {/* Donor/Purpose Search Box */}
             <div className="relative w-full sm:w-auto">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -150,7 +225,7 @@ export default function WelfareFundPage() {
                 </svg>
               </span>
               <input
-                type="text" placeholder="দাতার নাম খুঁজুন (Search donor)..."
+                type="text" placeholder="খুঁজুন (Search name, purpose or note)..."
                 list="donor-suggestions"
                 value={search} onChange={e => setSearch(e.target.value)}
                 className="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy w-full sm:w-56"
@@ -190,38 +265,54 @@ export default function WelfareFundPage() {
           </div>
         </div>
 
+        {/* Monthly History Pills (Tabs) */}
+        {uniqueMonths && uniqueMonths.length > 0 && (
+          <div className="px-5 py-2.5 bg-white rounded-xl border border-gray-100 flex flex-wrap gap-1.5 items-center no-print shadow-sm">
+            <span className="text-xs font-bold text-gray-400 mr-1.5">মাস ফিল্টার (Month Filter):</span>
+            <button
+              onClick={() => setSelectedMonth('all')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${selectedMonth === 'all' ? 'bg-brand-navy text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              সব সময় (All Time)
+            </button>
+            {uniqueMonths.map((m) => (
+              <button
+                key={m}
+                onClick={() => setSelectedMonth(m)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${selectedMonth === m ? 'bg-brand-navy text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+              >
+                {formatMonthName(m)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Cash Book Ledger style Table */}
         <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full text-sm whitespace-nowrap text-left">
+            <table className="w-full text-sm text-left">
               <thead>
-                <tr className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider">
-                  <th className="px-6 py-4 font-bold w-32">
-                    <div>তারিখ</div>
-                    <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Date</div>
-                  </th>
-                  <th className="px-6 py-4 font-bold">
-                    <div>বিবরণ (ধরণ ও খাত)</div>
-                    <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Details (Type & Purpose)</div>
-                  </th>
-                  <th className="px-6 py-4 font-bold text-right">
-                    <div>টাকার পরিমাণ</div>
-                    <div className="text-[10px] text-gray-400/80 font-normal lowercase mt-0.5">Amount</div>
-                  </th>
+                <tr className="bg-gray-50 text-gray-450 text-xs uppercase tracking-wider border-b border-gray-100">
+                  <th className="px-6 py-4 font-bold w-32">তারিখ (Date)</th>
+                  <th className="px-6 py-4 font-bold">বিবরণ / খাত (Description / Purpose)</th>
+                  <th className="px-6 py-4 font-bold">মন্তব্য / নোট (Remarks / Notes)</th>
+                  <th className="px-6 py-4 font-bold text-right text-green-700">জমা / চাঁদা (Donation)</th>
+                  <th className="px-6 py-4 font-bold text-right text-red-600">খরচ (Expense)</th>
                   {isAdmin && <th className="no-print px-6 py-4 font-bold text-center w-24">অ্যাকশন (Action)</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-100 text-gray-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={isAdmin ? 4 : 3} className="px-6 py-12 text-center">
+                    <td colSpan={isAdmin ? 6 : 5} className="px-6 py-12 text-center">
                       <div className="w-8 h-8 border-4 border-brand-navy/20 border-t-brand-navy rounded-full animate-spin mx-auto mb-3" />
                       <p className="text-gray-400 font-medium text-sm">লোড হচ্ছে (Loading)...</p>
                     </td>
                   </tr>
                 ) : filteredTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 4 : 3} className="px-6 py-12 text-center text-gray-400">
-                      কোনো রেকর্ড পাওয়া যায়নি (No records found)。
+                    <td colSpan={isAdmin ? 6 : 5} className="px-6 py-12 text-center text-gray-400">
+                      কোনো লেনদেন রেকর্ড পাওয়া যায়নি (No transactions found)。
                     </td>
                   </tr>
                 ) : (
@@ -229,34 +320,40 @@ export default function WelfareFundPage() {
                     const isExpense = tx.type === 'expense'
                     return (
                       <tr key={tx.id} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="px-6 py-4 font-medium text-gray-600">{tx.date}</td>
-                        <td className="px-6 py-4 font-medium text-gray-800">
-                          <div className="flex items-center gap-2">
-                            {isExpense ? (
-                              <>
-                                <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs select-none">খরচ (Expense)</span>
-                                <span className="font-bold text-gray-800">{tx.notes}</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded text-xs select-none">চাঁদা (Donation)</span>
-                                <span className="font-bold text-gray-800">{tx.donor_name}</span>
-                              </>
-                            )}
-                          </div>
+                        <td className="px-6 py-4 font-medium text-gray-600 whitespace-nowrap">{tx.date}</td>
+                        <td className="px-6 py-4 font-semibold text-gray-800 break-words max-w-[200px]">
+                          {isExpense ? tx.notes : tx.donor_name}
                         </td>
-                        <td className={`px-6 py-4 font-bold text-right ${isExpense ? 'text-red-600' : 'text-green-700'}`}>
-                          <div className="inline-flex items-center gap-1 justify-end w-full">
-                            <span>{isExpense ? '−' : '+'}</span>
-                            <CurrencySymbol className={`w-3.5 h-3.5 ${isExpense ? 'text-red-600' : 'text-green-700'}`} />
-                            <span>{fmt(tx.amount)}</span>
-                          </div>
+                        <td className="px-6 py-4 text-gray-500 break-words max-w-[200px]" title={tx.notes}>
+                          {isExpense ? <span className="text-gray-300">—</span> : (tx.notes || <span className="text-gray-300">—</span>)}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-right text-green-700 whitespace-nowrap">
+                          {!isExpense ? (
+                            <div className="inline-flex items-center gap-1 justify-end w-full">
+                              <span>+</span>
+                              <CurrencySymbol className="w-3.5 h-3.5 text-green-700" />
+                              <span>{fmt(tx.amount)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-right text-red-600 whitespace-nowrap">
+                          {isExpense ? (
+                            <div className="inline-flex items-center gap-1 justify-end w-full">
+                              <span>−</span>
+                              <CurrencySymbol className="w-3.5 h-3.5 text-red-600" />
+                              <span>{fmt(tx.amount)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
                         </td>
                         {isAdmin && (
-                          <td className="no-print px-6 py-4 text-center">
+                          <td className="no-print px-6 py-4 text-center whitespace-nowrap">
                             <button onClick={() => handleDelete(tx.id)} title="ডিলিট করুন"
                               className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                              <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                             </button>
                           </td>
                         )}
@@ -292,15 +389,25 @@ export default function WelfareFundPage() {
                   />
                 </div>
                 {txType === 'donation' ? (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">দাতার নাম (Donor Name)</label>
-                    <input
-                      type="text" required autoFocus placeholder="দাতার নাম লিখুন"
-                      list="donor-suggestions"
-                      value={donorName} onChange={e => setDonorName(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
-                    />
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">দাতার নাম (Donor Name)</label>
+                      <input
+                        type="text" required autoFocus placeholder="দাতার নাম লিখুন"
+                        list="donor-suggestions"
+                        value={donorName} onChange={e => setDonorName(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">নোট / মন্তব্য (Remarks - Optional)</label>
+                      <input
+                        type="text" placeholder="অনুদানের মন্তব্য/নোট (ঐচ্ছিক)"
+                        value={notes} onChange={e => setNotes(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                      />
+                    </div>
+                  </>
                 ) : (
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">খরচের বিবরণ / খাত (Purpose / Note)</label>

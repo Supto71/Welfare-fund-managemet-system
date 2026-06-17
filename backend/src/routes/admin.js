@@ -153,7 +153,7 @@ router.post('/welfare-transaction', (req, res) => {
 
   try {
     db.prepare("INSERT INTO welfare_transactions (date, donor_name, amount, type, notes) VALUES (?, ?, ?, ?, ?)")
-      .run(date, type === 'donation' ? donor_name : '', parsedAmount, type, type === 'expense' ? notes : '');
+      .run(date, type === 'donation' ? donor_name : '', parsedAmount, type, notes || '');
 
     return res.status(200).json({ success: true, message: 'Welfare transaction added successfully.' });
   } catch (err) {
