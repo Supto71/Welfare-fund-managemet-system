@@ -14,7 +14,17 @@ async function request(path, options = {}) {
       ...options.headers,
     },
   })
-  const data = await res.json()
+  
+  let data = {}
+  const contentType = res.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    data = await res.json()
+  } else {
+    const text = await res.text()
+    const cleanText = text.length > 150 ? text.substring(0, 150) + '...' : text
+    data = { message: cleanText || `HTTP Error ${res.status}` }
+  }
+  
   if (!res.ok) throw new Error(data.message || 'Request failed')
   return data
 }

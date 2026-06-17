@@ -15,6 +15,11 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Prevent unhandled errors from crashing the Node.js process
+pool.on('error', (err) => {
+  console.error('[DB Pool] Unexpected error on idle client:', err.message);
+});
+
 const db = {
   query: (text, params) => pool.query(text, params),
   connect: () => pool.connect(),
