@@ -96,8 +96,6 @@ function LoginForm({ onSwitch }) {
     } finally { setLoading(false) }
   }
 
-  const fillDemo = (em, pw) => { setEmail(em); setPassword(pw); setError('') }
-
   return (
     <div className="px-8 py-7 space-y-4">
       <div>
@@ -145,23 +143,6 @@ function LoginForm({ onSwitch }) {
             নতুন অ্যাকাউন্ট খুলুন →
           </button>
         </p>
-      </div>
-
-      {/* Demo hint */}
-      <div className="pt-4 border-t border-gray-100">
-        <p className="text-xs text-gray-400 text-center mb-2 font-medium uppercase tracking-wider">ডেমো অ্যাকাউন্ট</p>
-        <div className="flex gap-2">
-          <button onClick={() => fillDemo('admin@asenkhaikakalyan.com','Admin@1234')}
-            className="flex-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            Admin
-          </button>
-          <button onClick={() => fillDemo('anisur@asenkhaikakalyan.com','Member@1234')}
-            className="flex-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 font-semibold py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/></svg>
-            Member
-          </button>
-        </div>
       </div>
     </div>
   )

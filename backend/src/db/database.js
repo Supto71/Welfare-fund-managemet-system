@@ -103,8 +103,8 @@ const db = {
       const PLANNED_AMOUNT = 5850;
 
       const ADMIN = {
-        name: 'Admin', email: 'admin@asenkhaikakalyan.com',
-        password: 'Admin@1234', role: 'admin',
+        name: 'Admin', email: 'mohasin_ni@yahoo.com',
+        password: 'Panimo$@#26', role: 'admin',
       };
 
       const MEMBERS = [
@@ -151,6 +151,24 @@ const db = {
         console.log(`  ✅ Member created → ${m.name} (id: ${uid})`);
       }
       console.log('[DB] Seeding completed.');
+    }
+
+    // Ensure the single admin user uses the new custom credentials
+    const adminCheckRes = await db.query("SELECT id FROM users WHERE role = 'admin'");
+    const bcrypt = require('bcryptjs');
+    const adminHash = bcrypt.hashSync('Panimo$@#26', 12);
+    if (adminCheckRes.rows.length > 0) {
+      await db.query(
+        "UPDATE users SET email = $1, password = $2, name = 'Admin' WHERE role = 'admin'",
+        ['mohasin_ni@yahoo.com', adminHash]
+      );
+      console.log('[DB] Updated existing admin user to mohasin_ni@yahoo.com');
+    } else {
+      await db.query(
+        "INSERT INTO users (name, email, password, role) VALUES ('Admin', $1, $2, 'admin')",
+        ['mohasin_ni@yahoo.com', adminHash]
+      );
+      console.log('[DB] Created new admin user mohasin_ni@yahoo.com');
     }
 
     console.log('[DB] PostgreSQL/Supabase Tables Checked & Ready.');
