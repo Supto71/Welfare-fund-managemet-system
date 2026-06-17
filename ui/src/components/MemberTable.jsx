@@ -81,9 +81,12 @@ export default function MemberTable({
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedHistoryMonth, setSelectedHistoryMonth] = useState('all')
 
-  const filtered = members.filter(m =>
-    m.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = members.filter(m => {
+    if (selectedMonth && selectedMonth !== 'all' && (m.individual_monthly_deposit || 0) <= 0) {
+      return false
+    }
+    return m.name.toLowerCase().includes(search.toLowerCase())
+  })
 
   const openHistory = async (m) => {
     setHistoryMember(m)
