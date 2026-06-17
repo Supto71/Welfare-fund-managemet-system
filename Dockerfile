@@ -10,8 +10,7 @@ RUN npm run build
 FROM node:22-alpine
 WORKDIR /app
 
-# Create directory for persistent SQLite database
-RUN mkdir -p /data
+
 
 # Copy backend package files
 COPY backend/package*.json ./backend/
@@ -27,7 +26,6 @@ COPY --from=frontend-builder /app/ui/dist /app/ui/dist
 # Set environment variables
 ENV PORT=5000
 ENV NODE_ENV=production
-ENV DB_PATH=/data/welfare_fund.db
 
 # Expose port
 EXPOSE 5000

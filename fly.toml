@@ -8,10 +8,5 @@ primary_region = "sin"
   auto_start_machines = true
   min_machines_running = 1
 
-[[mounts]]
-  source = "welfare_data"
-  destination = "/data"
-
 [env]
   NODE_ENV = "production"
-  DB_PATH = "/data/welfare_fund.db"
