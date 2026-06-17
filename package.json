@@ -1,0 +1,13 @@
+{
+  "name": "asen-khai-welfare-fund",
+  "version": "1.0.0",
+  "description": "Welfare Fund Management System for Glitch",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "start": "node backend/src/server.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
