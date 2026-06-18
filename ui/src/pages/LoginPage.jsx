@@ -365,7 +365,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white mb-3 shadow-lg overflow-hidden ring-4 ring-brand-navyLight">
               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" onError={(e) => e.target.style.display='none'} />
             </div>
-            <h1 className="font-bn text-white text-lg font-bold leading-snug">আসেন খাই কল্যাণ তহবিল</h1>
+            <h1 className="font-bn text-white text-lg font-bold leading-snug notranslate">আসেন খাই কল্যাণ তহবিল</h1>
             <p className="text-blue-200 text-xs mt-1 font-medium">Share &amp; Welfare Fund Management</p>
 
             {/* Tab switcher inside banner */}
@@ -390,7 +390,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-blue-200/50 text-xs mt-5">
-          &copy; 2025 আসেন খাই কল্যাণ তহবিল &mdash; সকল অধিকার সংরক্ষিত
+          &copy; 2025 <span className="notranslate">আসেন খাই</span> কল্যাণ তহবিল &mdash; সকল অধিকার সংরক্ষিত
         </p>
       </div>
     </div>

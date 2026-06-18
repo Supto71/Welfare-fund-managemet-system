@@ -15,7 +15,7 @@ export default function HomePage() {
             স্বাগতম (Welcome), {user?.name}! 👋
           </h1>
           <p className="text-gray-500 max-w-xl mx-auto">
-            আসেন খাই কল্যাণ তহবিলে আপনাকে স্বাগতম (Welcome to Asen Khai Welfare Fund portal)। নিচে থেকে আপনার প্রয়োজনীয় সেকশনটি বেছে নিন।
+            <span className="notranslate">আসেন খাই</span> কল্যাণ তহবিলে আপনাকে স্বাগতম (Welcome to Asen Khai Welfare Fund portal)। নিচে থেকে আপনার প্রয়োজনীয় সেকশনটি বেছে নিন।
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">আসেন খাই কল্যাণ তহবিল (Welfare Fund)</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3 notranslate">আসেন খাই কল্যাণ তহবিল (Welfare Fund)</h2>
               <p className="text-gray-500">কল্যাণ তহবিলে দাতাদের অনুদান, তারিখ অনুযায়ী হিসাব এবং মোট জমা হওয়া ফান্ডের বিস্তারিত তথ্য দেখুন।</p>
             </div>
             <div className="bg-gray-50/80 p-4 border-t border-gray-100 text-center text-green-700 font-bold text-sm group-hover:bg-green-600 group-hover:text-white transition-colors">

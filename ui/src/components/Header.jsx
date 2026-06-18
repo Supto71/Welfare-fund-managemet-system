@@ -46,7 +46,7 @@ export default function Header({ onRefresh }) {
             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display='none'} />
           </div>
           <div className="min-w-0">
-            <h1 className="font-bn font-bold text-base sm:text-lg leading-tight truncate">
+            <h1 className="font-bn font-bold text-base sm:text-lg leading-tight truncate notranslate">
               আসেন খাই কল্যাণ তহবিল
             </h1>
             <p className="text-blue-300 text-xs hidden sm:block">Share &amp; Welfare Fund Dashboard</p>

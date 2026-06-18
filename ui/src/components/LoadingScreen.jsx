@@ -8,7 +8,7 @@ export default function LoadingScreen() {
         </svg>
       </div>
       <div className="text-center">
-        <p className="font-bn font-bold text-gray-700 text-lg">আসেন খাই কল্যাণ তহবিল</p>
+        <p className="font-bn font-bold text-gray-700 text-lg notranslate">আসেন খাই কল্যাণ তহবিল</p>
         <p className="text-gray-400 text-sm mt-1">ডেটা লোড হচ্ছে...</p>
       </div>
       <div className="flex gap-1.5">
