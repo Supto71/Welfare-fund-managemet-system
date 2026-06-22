@@ -301,12 +301,10 @@ export default function MemberTable({
                   <div>অগ্রগতি</div>
                   <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Progress</div>
                 </th>
-                {isAdmin && (
-                  <th className="px-5 py-3 text-center font-bold no-print">
-                    <div>অ্যাকশন</div>
-                    <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Action</div>
-                  </th>
-                )}
+                <th className="px-5 py-3 text-center font-bold no-print">
+                  <div>অ্যাকশন</div>
+                  <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Action</div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -381,7 +379,7 @@ export default function MemberTable({
 
                     {/* Admin/User action */}
                     <td className="px-5 py-3.5 text-center no-print">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-2">
+                      <div className="inline-flex items-center gap-2">
                         {(isAdmin || user?.id === m.id) && (
                           <button onClick={() => openHistory(m)}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-lg transition-colors">
