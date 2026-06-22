@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [error,   setError]   = useState('')
   const [refresh, setRefresh] = useState(0)
   const [selectedMonth, setSelectedMonth] = useState('all')
+  const [pendingUsers, setPendingUsers] = useState([])
+
+  const isAdmin = user?.role === 'admin'
 
   const fetchSummary = useCallback(async () => {
     setLoading(true)
@@ -34,18 +37,42 @@ export default function DashboardPage() {
     try {
       const res = await api.getSummary(selectedMonth)
       setData(res.data)
+
+      if (isAdmin) {
+        const pendingRes = await api.getPendingApprovals()
+        setPendingUsers(pendingRes.data || [])
+      }
     } catch (err) {
       setError(err.message || 'ডেটা লোড করতে ব্যর্থ হয়েছে।')
     } finally {
       setLoading(false)
     }
-  }, [selectedMonth])
+  }, [selectedMonth, isAdmin])
 
   useEffect(() => {
     fetchSummary()
   }, [fetchSummary, refresh])
 
   const triggerRefresh = () => setRefresh(r => r + 1)
+
+  const handleApprove = async (userId) => {
+    try {
+      await api.approveUser({ userId })
+      triggerRefresh()
+    } catch (err) {
+      alert(err.message || 'অনুমোদন ব্যর্থ হয়েছে।')
+    }
+  }
+
+  const handleReject = async (userId) => {
+    if (!window.confirm('আপনি কি নিশ্চিত যে আপনি এই নিবন্ধন অনুরোধটি প্রত্যাখ্যান করতে চান?')) return
+    try {
+      await api.rejectUser({ userId })
+      triggerRefresh()
+    } catch (err) {
+      alert(err.message || 'প্রত্যাখ্যান ব্যর্থ হয়েছে।')
+    }
+  }
 
   if (loading) return <LoadingScreen />
   if (error)   return <ErrorScreen message={error} onRetry={triggerRefresh} />
@@ -56,8 +83,6 @@ export default function DashboardPage() {
     total_amount, total_shares_sold, monthly_amount,
     monthlyHistory
   } = data
-
-  const isAdmin = user?.role === 'admin'
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -76,6 +101,45 @@ export default function DashboardPage() {
             PDF ডাউনলোড / প্রিন্ট (PDF Download / Print)
           </button>
         </div>
+
+        {/* ── Pending Approvals Section ──────────────────── */}
+        {isAdmin && pendingUsers.length > 0 && (
+          <section className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3 no-print">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-amber-800 text-base flex items-center gap-2">
+                  <svg className="w-5 h-5 text-amber-600 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  অনুমোদনের জন্য অপেক্ষমান সদস্য (Pending Registrations)
+                </h3>
+                <p className="text-amber-600 text-xs mt-0.5">এই ব্যবহারকারীরা অ্যাকাউন্ট নিবন্ধন করেছেন এবং লগইন করার আগে আপনার অনুমোদনের প্রয়োজন।</p>
+              </div>
+              <span className="bg-amber-200 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">{pendingUsers.length} টি অনুরোধ</span>
+            </div>
+            
+            <div className="divide-y divide-amber-100 max-h-60 overflow-y-auto">
+              {pendingUsers.map(u => (
+                <div key={u.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 first:pt-0 last:pb-0">
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">{u.name}</p>
+                    <p className="text-gray-500 text-xs mt-0.5">{u.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => handleReject(u.id)}
+                      className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                      প্রত্যাখ্যান (Reject)
+                    </button>
+                    <button onClick={() => handleApprove(u.id)}
+                      className="bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                      অনুমোদন করুন (Approve)
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── Analytics Cards ─────────────────────────────── */}
         <section>

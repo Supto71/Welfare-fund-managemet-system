@@ -257,4 +257,46 @@ router.put('/update-member', async (req, res) => {
   }
 });
 
+// ── GET /api/admin/pending-approvals ─────────────────────────────────────────────
+router.get('/pending-approvals', async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT id, name, email, created_at FROM users WHERE role = 'member' AND is_approved = FALSE ORDER BY created_at DESC"
+    );
+    return res.status(200).json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('[Admin/PendingApprovals]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to fetch pending approvals.' });
+  }
+});
+
+// ── POST /api/admin/approve-user ─────────────────────────────────────────────────
+router.post('/approve-user', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ success: false, message: 'userId is required.' });
+
+  try {
+    await db.query("UPDATE users SET is_approved = TRUE WHERE id = $1", [userId]);
+    return res.status(200).json({ success: true, message: 'User approved successfully.' });
+  } catch (err) {
+    console.error('[Admin/ApproveUser]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to approve user.' });
+  }
+});
+
+// ── POST /api/admin/reject-user ──────────────────────────────────────────────────
+router.post('/reject-user', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ success: false, message: 'userId is required.' });
+
+  try {
+    // Delete cascade will automatically clean up shares_summary/transactions
+    await db.query("DELETE FROM users WHERE id = $1", [userId]);
+    return res.status(200).json({ success: true, message: 'User rejected and deleted successfully.' });
+  } catch (err) {
+    console.error('[Admin/RejectUser]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to reject user.' });
+  }
+});
+
 module.exports = router;

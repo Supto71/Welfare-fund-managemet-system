@@ -34,12 +34,13 @@ const db = {
     // Core table creations
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id         SERIAL PRIMARY KEY,
-        name       TEXT NOT NULL,
-        email      TEXT NOT NULL UNIQUE,
-        password   TEXT NOT NULL,
-        role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','member')),
-        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        id          SERIAL PRIMARY KEY,
+        name        TEXT NOT NULL,
+        email       TEXT NOT NULL UNIQUE,
+        password    TEXT NOT NULL,
+        role        TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','member')),
+        is_approved BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS shares_summary (
@@ -131,7 +132,7 @@ const db = {
       // Insert Admin
       const adminHash = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
       await db.query(
-        'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)',
+        'INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, TRUE)',
         [ADMIN.name, ADMIN.email.toLowerCase().trim(), adminHash, ADMIN.role]
       );
       console.log(`  ✅ Admin created → ${ADMIN.email}`);
@@ -140,7 +141,7 @@ const db = {
       const memberHash = bcrypt.hashSync('Member@1234', SALT_ROUNDS);
       for (const m of MEMBERS) {
         const insertRes = await db.query(
-          'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
+          'INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, TRUE) RETURNING id',
           [m.name, m.email.toLowerCase().trim(), memberHash, 'member']
         );
         const uid = insertRes.rows[0].id;
@@ -159,13 +160,13 @@ const db = {
     const adminHash = bcrypt.hashSync('Panimo$@#26', 12);
     if (adminCheckRes.rows.length > 0) {
       await db.query(
-        "UPDATE users SET email = $1, password = $2, name = 'Admin' WHERE role = 'admin'",
+        "UPDATE users SET email = $1, password = $2, name = 'Admin', is_approved = TRUE WHERE role = 'admin'",
         ['mohasin_ni@yahoo.com', adminHash]
       );
       console.log('[DB] Updated existing admin user to mohasin_ni@yahoo.com');
     } else {
       await db.query(
-        "INSERT INTO users (name, email, password, role) VALUES ('Admin', $1, $2, 'admin')",
+        "INSERT INTO users (name, email, password, role, is_approved) VALUES ('Admin', $1, $2, 'admin', TRUE)",
         ['mohasin_ni@yahoo.com', adminHash]
       );
       console.log('[DB] Created new admin user mohasin_ni@yahoo.com');

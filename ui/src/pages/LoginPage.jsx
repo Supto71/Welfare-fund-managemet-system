@@ -176,8 +176,16 @@ function RegisterForm({ onSwitch }) {
     setLoading(true)
     try {
       const res = await api.register({ name, email, password })
-      // Auto-login after successful registration
-      login(res.user, res.token)
+      if (res.pendingApproval) {
+        setSuccess(res.message)
+        setName('')
+        setEmail('')
+        setPassword('')
+        setConfirm('')
+      } else {
+        // Auto-login after successful registration (if not pending approval)
+        login(res.user, res.token)
+      }
     } catch (err) {
       setError(err.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে।')
     } finally { setLoading(false) }

@@ -57,11 +57,14 @@ router.post('/register', async (req, res) => {
       client.release();
     }
 
-    const userRes = await db.query('SELECT id, name, email, role FROM users WHERE id = $1', [userId]);
+    const userRes = await db.query('SELECT id, name, email, role, is_approved FROM users WHERE id = $1', [userId]);
     const user = userRes.rows[0];
-    const token = signToken(user);
 
-    return res.status(201).json({ success: true, message: 'Registration successful.', token, user });
+    return res.status(201).json({ 
+      success: true, 
+      message: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। অনুগ্রহ করে এডমিন অ্যাপ্রুভালের জন্য অপেক্ষা করুন (Registration successful. Please wait for admin approval).', 
+      pendingApproval: true 
+    });
   } catch (err) {
     console.error('[Auth/Register]', err.message);
     return res.status(500).json({ success: false, message: 'Server error during registration.' });
@@ -77,7 +80,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const userRes = await db.query(
-      'SELECT id, name, email, password, role FROM users WHERE email = $1',
+      'SELECT id, name, email, password, role, is_approved FROM users WHERE email = $1',
       [email.toLowerCase().trim()]
     );
     const user = userRes.rows[0];
@@ -87,6 +90,13 @@ router.post('/login', async (req, res) => {
 
     if (!bcrypt.compareSync(password, user.password))
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+    if (!user.is_approved) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'আপনার অ্যাকাউন্টটি এখনও এডমিন দ্বারা অ্যাপ্রুভ করা হয়নি। অনুগ্রহ করে অপেক্ষা করুন (Your account is pending admin approval. Please wait).' 
+      });
+    }
 
     const token = signToken(user);
 

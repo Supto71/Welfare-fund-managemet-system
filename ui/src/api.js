@@ -48,5 +48,10 @@ export const api = {
   
   // User Profile
   updateMyName:    (body)       => request('/users/me/name', { method: 'PUT', body: JSON.stringify(body) }),
-  getMemberNames:  ()           => request('/users/names')
+  getMemberNames:  ()           => request('/users/names'),
+
+  // Approvals
+  getPendingApprovals: ()       => request('/admin/pending-approvals'),
+  approveUser:     (body)       => request('/admin/approve-user', { method: 'POST', body: JSON.stringify(body) }),
+  rejectUser:      (body)       => request('/admin/reject-user', { method: 'POST', body: JSON.stringify(body) }),
 }

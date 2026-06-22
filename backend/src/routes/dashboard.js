@@ -25,7 +25,7 @@ router.get('/summary', authenticate, async (req, res) => {
       const sharesAggRes = await db.query(`
         SELECT
           COALESCE(SUM(amount_paid), 0) AS total_amount,
-          (SELECT COUNT(*) FROM users WHERE role = 'member') AS total_members,
+          (SELECT COUNT(*) FROM users WHERE role = 'member' AND is_approved = TRUE) AS total_members,
           COALESCE(SUM(shares_bought), 0) AS total_shares_sold,
           COALESCE(SUM(amount_paid), 0) AS monthly_amount
         FROM transactions
@@ -36,7 +36,7 @@ router.get('/summary', authenticate, async (req, res) => {
       const sharesAggRes = await db.query(`
         SELECT
           COALESCE(SUM(amount_paid), 0) AS total_amount,
-          (SELECT COUNT(*) FROM users WHERE role = 'member') AS total_members,
+          (SELECT COUNT(*) FROM users WHERE role = 'member' AND is_approved = TRUE) AS total_members,
           COALESCE(SUM(shares_bought), 0) AS total_shares_sold,
           COALESCE(SUM(CASE WHEN SUBSTRING(date, 1, 7) = TO_CHAR(CURRENT_DATE, 'YYYY-MM') THEN amount_paid ELSE 0 END), 0) AS monthly_amount
         FROM transactions
@@ -71,7 +71,7 @@ router.get('/summary', authenticate, async (req, res) => {
         FROM users u
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
-        WHERE u.role = 'member'
+        WHERE u.role = 'member' AND u.is_approved = TRUE
         GROUP BY u.id, ss.planned_amount
         ORDER BY u.id ASC
       `, [selectedMonth, selectedMonth, selectedMonth]);
@@ -90,7 +90,7 @@ router.get('/summary', authenticate, async (req, res) => {
         FROM users u
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
-        WHERE u.role = 'member'
+        WHERE u.role = 'member' AND u.is_approved = TRUE
         GROUP BY u.id, ss.planned_amount
         ORDER BY u.id ASC
       `);
