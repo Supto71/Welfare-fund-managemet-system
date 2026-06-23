@@ -82,6 +82,9 @@ export default function MemberTable({
   const [selectedHistoryMonth, setSelectedHistoryMonth] = useState('all')
 
   const filtered = members.filter(m => {
+    if (m.role !== 'member' && m.role !== 'admin') {
+      return false
+    }
     if (selectedMonth && selectedMonth !== 'all' && (m.individual_monthly_deposit || 0) <= 0) {
       return false
     }

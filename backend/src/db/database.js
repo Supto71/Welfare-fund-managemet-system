@@ -124,7 +124,6 @@ const db = {
       { name: 'Sumon Ahmed',      email: 'sumon@asenkhaikakalyan.com' },
       { name: 'Raju Mia',         email: 'raju@asenkhaikakalyan.com' },
       { name: 'Belal Hossain',    email: 'belal@asenkhaikakalyan.com' },
-      { name: 'Nazrul Islam',     email: 'nazrul@asenkhaikakalyan.com' },
     ];
 
     // Seed/Update Admin
