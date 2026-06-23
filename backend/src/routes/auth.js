@@ -17,6 +17,14 @@ const signToken = (user) =>
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 
+const normalizeName = (str) => {
+  if (!str) return '';
+  return str.toLowerCase()
+            .replace(/[\.\-\s]/g, '')
+            .replace(/^(md|mst|mst\.)/g, '')
+            .trim();
+};
+
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -34,22 +42,44 @@ router.post('/register', async (req, res) => {
     if (existingRes.rows[0])
       return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
 
+    // Try to match with an existing seeded member by name
+    const allUsersRes = await db.query("SELECT id, name, email FROM users WHERE role = 'member'");
+    const normalizedInputName = normalizeName(name);
+    
+    let matchedUserId = null;
+    for (const u of allUsersRes.rows) {
+      if (normalizeName(u.name) === normalizedInputName && u.email.endsWith('@asenkhaikakalyan.com')) {
+        matchedUserId = u.id;
+        break;
+      }
+    }
+
     const hashed = bcrypt.hashSync(password, SALT_ROUNDS);
 
     const client = await db.connect();
     let userId;
     try {
       await client.query('BEGIN');
-      const insertUserRes = await client.query(
-        'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
-        [name, email.toLowerCase().trim(), hashed, role]
-      );
-      userId = insertUserRes.rows[0].id;
+      if (matchedUserId) {
+        // Update the existing seeded user record to link their new login credentials
+        await client.query(
+          'UPDATE users SET name = $1, email = $2, password = $3, is_approved = FALSE WHERE id = $4',
+          [name, emailLower, hashed, matchedUserId]
+        );
+        userId = matchedUserId;
+      } else {
+        // Create a new user record
+        const insertUserRes = await client.query(
+          'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
+          [name, emailLower, hashed, role]
+        );
+        userId = insertUserRes.rows[0].id;
 
-      await client.query(
-        'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, 5850, 0)',
-        [userId]
-      );
+        await client.query(
+          'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, 5850, 0)',
+          [userId]
+        );
+      }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
