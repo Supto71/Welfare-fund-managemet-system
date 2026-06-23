@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [refresh, setRefresh] = useState(0)
   const [selectedMonth, setSelectedMonth] = useState('all')
   const [pendingUsers, setPendingUsers] = useState([])
+  const [showVerificationSection, setShowVerificationSection] = useState(false)
 
   const isAdmin = user?.role === 'admin'
 
@@ -95,15 +96,26 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-800">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
           </div>
-          <button onClick={() => window.print()} 
-            className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            PDF ডাউনলোড / প্রিন্ট (PDF Download / Print)
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button 
+                onClick={() => setShowVerificationSection(!showVerificationSection)}
+                className="bg-white border border-blue-200 text-blue-700 px-4 py-2 rounded-lg font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {showVerificationSection ? 'ভেরিফিকেশন প্যানেল হাইড করুন' : 'রেজিস্ট্রেশন কন্ট্রোল দেখুন'}
+              </button>
+            )}
+            <button onClick={() => window.print()} 
+              className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              PDF ডাউনলোড / প্রিন্ট (PDF Download / Print)
+            </button>
+          </div>
         </div>
 
         {/* ── Pending Approvals Section ──────────────────── */}
-        {isAdmin && pendingUsers.length > 0 && (
+        {isAdmin && showVerificationSection && (
           <section className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3 no-print">
             <div className="flex items-center justify-between">
               <div>
@@ -119,24 +131,28 @@ export default function DashboardPage() {
             </div>
             
             <div className="divide-y divide-amber-100 max-h-60 overflow-y-auto">
-              {pendingUsers.map(u => (
-                <div key={u.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="font-semibold text-gray-800 text-sm">{u.name}</p>
-                    <p className="text-gray-500 text-xs mt-0.5">{u.email}</p>
+              {pendingUsers.length === 0 ? (
+                <div className="py-6 text-center text-amber-700 text-sm font-medium">কোনো অপেক্ষমান সদস্য নেই (No pending registrations)</div>
+              ) : (
+                pendingUsers.map(u => (
+                  <div key={u.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 first:pt-0 last:pb-0">
+                    <div>
+                      <p className="font-semibold text-gray-800 text-sm">{u.name}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">{u.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => handleReject(u.id)}
+                        className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                        প্রত্যাখ্যান (Reject)
+                      </button>
+                      <button onClick={() => handleApprove(u.id)}
+                        className="bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                        অনুমোদন করুন (Approve)
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => handleReject(u.id)}
-                      className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                      প্রত্যাখ্যান (Reject)
-                    </button>
-                    <button onClick={() => handleApprove(u.id)}
-                      className="bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
-                      অনুমোদন করুন (Approve)
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
         )}
