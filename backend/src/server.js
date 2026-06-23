@@ -43,7 +43,7 @@ app.use(express.urlencoded({ extended: true })); // parse URL-encoded bodies
 app.get('/api/health', (_req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Welfare Fund API is running.',
+    message: 'Welfare Fund API is running. Version 1.0.1 - Admin Row Debug',
     timestamp: new Date().toISOString(),
   });
 });
