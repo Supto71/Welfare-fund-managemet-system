@@ -56,6 +56,11 @@ router.post('/add-transaction', async (req, res) => {
     } finally {
       client.release();
     }
+    // --- Notification Trigger ---
+    await db.query(
+      'INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)',
+      [userId, 'নতুন লেনদেন (New Transaction)', `আপনার অ্যাকাউন্টে নতুন লেনদেন যুক্ত করা হয়েছে। (A new transaction was added to your account.)`, 'transaction']
+    );
 
     return res.status(200).json({
       success: true,
@@ -116,6 +121,11 @@ router.put('/set-transaction', async (req, res) => {
     } finally {
       client.release();
     }
+    // --- Notification Trigger ---
+    await db.query(
+      'INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)',
+      [userId, 'অ্যাকাউন্ট আপডেট (Account Updated)', `আপনার শেয়ার এবং জমার পরিমাণ আপডেট করা হয়েছে। (Your shares and deposit amount were updated.)`, 'transaction']
+    );
 
     return res.status(200).json({
       success: true,
@@ -277,6 +287,13 @@ router.post('/approve-user', async (req, res) => {
 
   try {
     await db.query("UPDATE users SET is_approved = TRUE WHERE id = $1", [userId]);
+    
+    // --- Notification Trigger ---
+    await db.query(
+      'INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)',
+      [userId, 'অ্যাকাউন্ট অনুমোদিত (Account Approved)', `স্বাগতম! আপনার অ্যাকাউন্ট সফলভাবে অনুমোদিত হয়েছে। (Welcome! Your account has been successfully approved.)`, 'approval']
+    );
+
     return res.status(200).json({ success: true, message: 'User approved successfully.' });
   } catch (err) {
     console.error('[Admin/ApproveUser]', err.message);

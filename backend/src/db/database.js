@@ -161,6 +161,19 @@ const db = {
     }
     console.log('[DB] Seeding/Checks completed.');
 
+    // Notifications Table (Isolated)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        title VARCHAR(255),
+        message TEXT,
+        type VARCHAR(50),
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('[DB] PostgreSQL/Supabase Tables Checked & Ready.');
   } catch (err) {
     console.error('[DB] Initialization failed:', err.message);

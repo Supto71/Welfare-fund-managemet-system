@@ -24,6 +24,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const adminRoutes     = require('./routes/admin');
 const usersRoutes     = require('./routes/users');
 const welfareRoutes   = require('./routes/welfare');
+const notificationsRoutes = require('./routes/notifications');
 
 // ── Application setup ──────────────────────────────────────────────────────────
 const app  = express();
@@ -54,6 +55,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin',     adminRoutes);
 app.use('/api/users',     usersRoutes);
 app.use('/api/welfare',   welfareRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // ─── Serve Frontend (Static) ──────────────────────────────────────────────────
 const uiBuildPath = path.join(__dirname, '../../ui/dist');
