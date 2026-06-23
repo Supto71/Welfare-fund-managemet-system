@@ -205,6 +205,39 @@ export default function DashboardPage() {
           />
         </section>
 
+        {/* ── Registered Members List (Admin Only) ─────────────────────────── */}
+        {isAdmin && (
+          <section className="mt-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold text-gray-800">সফলভাবে নিবন্ধিত সদস্য (Successfully Registered)</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">অফিসিয়াল সদস্য তালিকা</p>
+                </div>
+                <div className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">
+                  {members.filter(m => m.role === 'member' || m.role === 'admin').length} জন
+                </div>
+              </div>
+              <div className="p-6">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {members.filter(m => m.role === 'member' || m.role === 'admin').map((member, idx) => (
+                    <li key={member.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                      <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{member.name}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">{member.role}</p>
+                      </div>
+                      <div className="w-2 h-2 rounded-full bg-green-500 shrink-0"></div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── Member Table ─────────────────────────────────── */}
         <section className="pb-8">
           <MemberTable
