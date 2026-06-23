@@ -29,7 +29,8 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
 
   try {
-    const existingRes = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    const emailLower = email.toLowerCase().trim();
+    const existingRes = await db.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [emailLower]);
     if (existingRes.rows[0])
       return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
 

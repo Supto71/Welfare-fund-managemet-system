@@ -95,82 +95,90 @@ const db = {
       console.log('[DB] Seeded initial welfare_fund row.');
     }
 
-    // Seed users and shares_summary if users table is empty
-    const userCountRes = await db.query('SELECT COUNT(*) AS cnt FROM users');
-    if (parseInt(userCountRes.rows[0].cnt) === 0) {
-      console.log('[DB] Seeding default members...');
-      const bcrypt = require('bcryptjs');
-      const SALT_ROUNDS = 12;
-      const PLANNED_AMOUNT = 5850;
-
-      const ADMIN = {
-        name: 'Admin', email: 'mohasin_ni@yahoo.com',
-        password: 'Panimo$@#26', role: 'admin',
-      };
-
-      const MEMBERS = [
-        { name: 'Anisur Rahman',    email: 'anisur@asenkhaikakalyan.com' },
-        { name: 'Fokhrul Islam',    email: 'fokhrul@asenkhaikakalyan.com' },
-        { name: 'Jahan',            email: 'jahan@asenkhaikakalyan.com' },
-        { name: 'Mithun',           email: 'mithun@asenkhaikakalyan.com' },
-        { name: 'Md Musa',          email: 'musa@asenkhaikakalyan.com' },
-        { name: 'Kabir Hossain',    email: 'kabir@asenkhaikakalyan.com' },
-        { name: 'Rafiqul Islam',    email: 'rafiqul@asenkhaikakalyan.com' },
-        { name: 'Delwar Hossain',   email: 'delwar@asenkhaikakalyan.com' },
-        { name: 'Shahadat Hossain', email: 'shahadat@asenkhaikakalyan.com' },
-        { name: 'Liton Mia',        email: 'liton@asenkhaikakalyan.com' },
-        { name: 'Ariful Islam',     email: 'ariful@asenkhaikakalyan.com' },
-        { name: 'Jahangir Alam',    email: 'jahangir@asenkhaikakalyan.com' },
-        { name: 'Rubel Hossain',    email: 'rubel@asenkhaikakalyan.com' },
-        { name: 'Mamun Rashid',     email: 'mamun@asenkhaikakalyan.com' },
-        { name: 'Sumon Ahmed',      email: 'sumon@asenkhaikakalyan.com' },
-        { name: 'Raju Mia',         email: 'raju@asenkhaikakalyan.com' },
-        { name: 'Belal Hossain',    email: 'belal@asenkhaikakalyan.com' },
-        { name: 'Nazrul Islam',     email: 'nazrul@asenkhaikakalyan.com' },
-      ];
-
-      // Insert Admin
-      const adminHash = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
-      await db.query(
-        'INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, TRUE)',
-        [ADMIN.name, ADMIN.email.toLowerCase().trim(), adminHash, ADMIN.role]
-      );
-      console.log(`  ✅ Admin created → ${ADMIN.email}`);
-
-      // Insert Members
-      const memberHash = bcrypt.hashSync('Member@1234', SALT_ROUNDS);
-      for (const m of MEMBERS) {
-        const insertRes = await db.query(
-          'INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, TRUE) RETURNING id',
-          [m.name, m.email.toLowerCase().trim(), memberHash, 'member']
-        );
-        const uid = insertRes.rows[0].id;
-        await db.query(
-          'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, $2, 0)',
-          [uid, PLANNED_AMOUNT]
-        );
-        console.log(`  ✅ Member created → ${m.name} (id: ${uid})`);
-      }
-      console.log('[DB] Seeding completed.');
-    }
-
-    // Ensure the single admin user uses the new custom credentials
-    const adminCheckRes = await db.query("SELECT id FROM users WHERE role = 'admin'");
+    // Seed users and shares_summary (Idempotent seed checks)
+    console.log('[DB] Running seeder checks...');
     const bcrypt = require('bcryptjs');
-    const adminHash = bcrypt.hashSync('Panimo$@#26', 12);
+    const SALT_ROUNDS = 12;
+    const PLANNED_AMOUNT = 5850;
+
+    const ADMIN = {
+      name: 'Admin', email: 'mohasin_ni@yahoo.com',
+      password: 'Panimo$@#26', role: 'admin',
+    };
+
+    const MEMBERS = [
+      { name: 'Anisur Rahman',    email: 'anisur@asenkhaikakalyan.com' },
+      { name: 'Fokhrul Islam',    email: 'fokhrul@asenkhaikakalyan.com' },
+      { name: 'Jahan',            email: 'jahan@asenkhaikakalyan.com' },
+      { name: 'Mithun',           email: 'mithun@asenkhaikakalyan.com' },
+      { name: 'Md Musa',          email: 'musa@asenkhaikakalyan.com' },
+      { name: 'Kabir Hossain',    email: 'kabir@asenkhaikakalyan.com' },
+      { name: 'Rafiqul Islam',    email: 'rafiqul@asenkhaikakalyan.com' },
+      { name: 'Delwar Hossain',   email: 'delwar@asenkhaikakalyan.com' },
+      { name: 'Shahadat Hossain', email: 'shahadat@asenkhaikakalyan.com' },
+      { name: 'Liton Mia',        email: 'liton@asenkhaikakalyan.com' },
+      { name: 'Ariful Islam',     email: 'ariful@asenkhaikakalyan.com' },
+      { name: 'Jahangir Alam',    email: 'jahangir@asenkhaikakalyan.com' },
+      { name: 'Rubel Hossain',    email: 'rubel@asenkhaikakalyan.com' },
+      { name: 'Mamun Rashid',     email: 'mamun@asenkhaikakalyan.com' },
+      { name: 'Sumon Ahmed',      email: 'sumon@asenkhaikakalyan.com' },
+      { name: 'Raju Mia',         email: 'raju@asenkhaikakalyan.com' },
+      { name: 'Belal Hossain',    email: 'belal@asenkhaikakalyan.com' },
+      { name: 'Nazrul Islam',     email: 'nazrul@asenkhaikakalyan.com' },
+    ];
+
+    // Seed/Update Admin
+    const adminEmail = ADMIN.email.toLowerCase().trim();
+    const adminCheckRes = await db.query("SELECT id FROM users WHERE LOWER(email) = LOWER($1)", [adminEmail]);
+    const adminHash = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
     if (adminCheckRes.rows.length > 0) {
       await db.query(
-        "UPDATE users SET email = $1, password = $2, name = 'Admin', is_approved = TRUE WHERE role = 'admin'",
-        ['mohasin_ni@yahoo.com', adminHash]
+        "UPDATE users SET password = $1, name = $2, role = 'admin', is_approved = TRUE WHERE id = $3",
+        [adminHash, ADMIN.name, adminCheckRes.rows[0].id]
       );
-      console.log('[DB] Updated existing admin user to mohasin_ni@yahoo.com');
+      console.log(`  ✅ Admin updated/verified → ${adminEmail}`);
     } else {
-      await db.query(
-        "INSERT INTO users (name, email, password, role, is_approved) VALUES ('Admin', $1, $2, 'admin', TRUE)",
-        ['mohasin_ni@yahoo.com', adminHash]
-      );
-      console.log('[DB] Created new admin user mohasin_ni@yahoo.com');
+      // Also check by role to update email if role exists but email changed
+      const adminRoleRes = await db.query("SELECT id FROM users WHERE role = 'admin'");
+      if (adminRoleRes.rows.length > 0) {
+        await db.query(
+          "UPDATE users SET email = $1, password = $2, name = $3, is_approved = TRUE WHERE id = $4",
+          [adminEmail, adminHash, ADMIN.name, adminRoleRes.rows[0].id]
+        );
+        console.log(`  ✅ Admin updated by role → ${adminEmail}`);
+      } else {
+        await db.query(
+          "INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, TRUE)",
+          [ADMIN.name, adminEmail, adminHash, ADMIN.role]
+        );
+        console.log(`  ✅ Admin created → ${adminEmail}`);
+      }
     }
+
+    // Seed Members
+    const memberHash = bcrypt.hashSync('Member@1234', SALT_ROUNDS);
+    for (const m of MEMBERS) {
+      const emailLower = m.email.toLowerCase().trim();
+      const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [emailLower]);
+      if (existing.rows.length > 0) {
+        // User already exists, skip insertion to prevent duplicates
+        continue;
+      }
+      
+      const insertRes = await db.query(
+        'INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, TRUE) RETURNING id',
+        [m.name, emailLower, memberHash, 'member']
+      );
+      const uid = insertRes.rows[0].id;
+      
+      // Ensure shares_summary exists
+      await db.query(
+        'INSERT INTO shares_summary (user_id, planned_amount, actual_amount) VALUES ($1, $2, 0) ON CONFLICT (user_id) DO NOTHING',
+        [uid, PLANNED_AMOUNT]
+      );
+      console.log(`  ✅ Member created → ${m.name} (id: ${uid})`);
+    }
+    console.log('[DB] Seeding/Checks completed.');
 
     console.log('[DB] PostgreSQL/Supabase Tables Checked & Ready.');
   } catch (err) {
