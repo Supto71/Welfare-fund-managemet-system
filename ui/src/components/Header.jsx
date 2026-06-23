@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
+import NotificationBell from './NotificationBell'
 
 export default function Header({ onRefresh }) {
   const { user, logout, updateUser } = useAuth()
@@ -78,6 +79,8 @@ export default function Header({ onRefresh }) {
 
         {/* Right side */}
         <div className="flex items-center gap-2 shrink-0">
+
+          <NotificationBell />
 
           {/* Refresh */}
           <button onClick={onRefresh} title="রিফ্রেশ"
