@@ -13,26 +13,7 @@ const ADMIN = {
   password: 'Admin@1234', role: 'admin',
 };
 
-const MEMBERS = [
-  { name: 'Anisur Rahman',    email: 'anisur@asenkhaikakalyan.com' },
-  { name: 'Fokhrul Islam',    email: 'fokhrul@asenkhaikakalyan.com' },
-  { name: 'Jahan',            email: 'jahan@asenkhaikakalyan.com' },
-  { name: 'Mithun',           email: 'mithun@asenkhaikakalyan.com' },
-  { name: 'Md Musa',          email: 'musa@asenkhaikakalyan.com' },
-  { name: 'Kabir Hossain',    email: 'kabir@asenkhaikakalyan.com' },
-  { name: 'Rafiqul Islam',    email: 'rafiqul@asenkhaikakalyan.com' },
-  { name: 'Delwar Hossain',   email: 'delwar@asenkhaikakalyan.com' },
-  { name: 'Shahadat Hossain', email: 'shahadat@asenkhaikakalyan.com' },
-  { name: 'Liton Mia',        email: 'liton@asenkhaikakalyan.com' },
-  { name: 'Ariful Islam',     email: 'ariful@asenkhaikakalyan.com' },
-  { name: 'Jahangir Alam',    email: 'jahangir@asenkhaikakalyan.com' },
-  { name: 'Rubel Hossain',    email: 'rubel@asenkhaikakalyan.com' },
-  { name: 'Mamun Rashid',     email: 'mamun@asenkhaikakalyan.com' },
-  { name: 'Sumon Ahmed',      email: 'sumon@asenkhaikakalyan.com' },
-  { name: 'Raju Mia',         email: 'raju@asenkhaikakalyan.com' },
-  { name: 'Belal Hossain',    email: 'belal@asenkhaikakalyan.com' },
-  { name: 'Nazrul Islam',     email: 'nazrul@asenkhaikakalyan.com' },
-];
+const MEMBERS = [];
 
 (async () => {
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

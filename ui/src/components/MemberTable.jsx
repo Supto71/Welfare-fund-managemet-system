@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../context/AuthContext'
 import CurrencySymbol from './CurrencySymbol'
+import SearchHistoryInput from './SearchHistoryInput'
 
 const fmt = (v) =>
   Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -222,17 +223,12 @@ export default function MemberTable({
             </div>
 
             {/* Name Search Box */}
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-              </span>
-              <input
-                type="text" placeholder="নাম খুঁজুন (Search name)..."
-                list="member-names-list"
-                value={search} onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy w-full sm:w-48"
+            <div className="relative w-full sm:w-48 z-40">
+              <SearchHistoryInput
+                value={search}
+                onChange={setSearch}
+                placeholder="নাম খুঁজুন (Search name)..."
+                storageKey="member_search_history"
               />
             </div>
           </div>

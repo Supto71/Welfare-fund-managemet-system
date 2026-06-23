@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import Header from '../components/Header'
 import WelfareFundBox from '../components/WelfareFundBox'
 import CurrencySymbol from '../components/CurrencySymbol'
+import SearchHistoryInput from '../components/SearchHistoryInput'
 
 const fmt = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -218,17 +219,13 @@ export default function WelfareFundPage() {
             </div>
 
             {/* Donor/Purpose Search Box */}
-            <div className="relative w-full sm:w-auto">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-              </span>
-              <input
-                type="text" placeholder="খুঁজুন (Search name, purpose or note)..."
-                list="donor-suggestions"
-                value={search} onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy w-full sm:w-56"
+            <div className="relative w-full sm:w-auto z-40">
+              <SearchHistoryInput
+                value={search}
+                onChange={setSearch}
+                placeholder="খুঁজুন (Search name, purpose or note)..."
+                storageKey="welfare_search_history"
+                className="sm:w-56"
               />
             </div>
 

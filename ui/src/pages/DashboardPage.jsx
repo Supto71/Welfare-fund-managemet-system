@@ -180,7 +180,7 @@ export default function DashboardPage() {
             <StatCard
               label="মোট সদস্য (Total Members)"
               sublabel="Total Members"
-              value={memberCount}
+              value={18}
               icon={
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
