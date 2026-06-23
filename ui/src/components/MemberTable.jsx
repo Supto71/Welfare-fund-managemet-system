@@ -184,7 +184,7 @@ export default function MemberTable({
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden notranslate" translate="no">
         {/* Table header toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
           <div>
@@ -321,13 +321,13 @@ export default function MemberTable({
                     <td className="px-5 py-3.5 text-gray-400 text-xs font-medium">{i + 1}</td>
 
                     {/* Name */}
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 notranslate" translate="no">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-brand-navy/10 text-brand-navy flex items-center justify-center text-xs font-bold shrink-0">
                           {m.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800 leading-none">{m.name}</p>
+                          <p className="font-semibold text-gray-800 leading-none notranslate" translate="no">{m.name}</p>
                           <p className="text-gray-400 text-[11px] mt-0.5 capitalize">{m.role}</p>
                         </div>
                       </div>

@@ -133,8 +133,8 @@ const db = {
     const adminHash = bcrypt.hashSync(ADMIN.password, SALT_ROUNDS);
     if (adminCheckRes.rows.length > 0) {
       await db.query(
-        "UPDATE users SET password = $1, name = $2, role = 'admin', is_approved = TRUE WHERE id = $3",
-        [adminHash, ADMIN.name, adminCheckRes.rows[0].id]
+        "UPDATE users SET password = $1, role = 'admin', is_approved = TRUE WHERE id = $2",
+        [adminHash, adminCheckRes.rows[0].id]
       );
       console.log(`  ✅ Admin updated/verified → ${adminEmail}`);
     } else {
@@ -142,8 +142,8 @@ const db = {
       const adminRoleRes = await db.query("SELECT id FROM users WHERE role = 'admin'");
       if (adminRoleRes.rows.length > 0) {
         await db.query(
-          "UPDATE users SET email = $1, password = $2, name = $3, is_approved = TRUE WHERE id = $4",
-          [adminEmail, adminHash, ADMIN.name, adminRoleRes.rows[0].id]
+          "UPDATE users SET email = $1, password = $2, is_approved = TRUE WHERE id = $3",
+          [adminEmail, adminHash, adminRoleRes.rows[0].id]
         );
         console.log(`  ✅ Admin updated by role → ${adminEmail}`);
       } else {
