@@ -71,7 +71,7 @@ router.get('/summary', authenticate, async (req, res) => {
         FROM users u
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
-        WHERE u.role = 'member' AND u.is_approved = TRUE
+        WHERE u.is_approved = TRUE
         GROUP BY u.id, ss.planned_amount
         ORDER BY u.id ASC
       `, [selectedMonth, selectedMonth, selectedMonth]);
@@ -90,7 +90,7 @@ router.get('/summary', authenticate, async (req, res) => {
         FROM users u
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
-        WHERE u.role = 'member' AND u.is_approved = TRUE
+        WHERE u.is_approved = TRUE
         GROUP BY u.id, ss.planned_amount
         ORDER BY u.id ASC
       `);

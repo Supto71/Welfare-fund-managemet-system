@@ -33,7 +33,7 @@ router.put('/me/name', async (req, res) => {
 // ── GET /api/users/names ──────────────────────────────────────────────────────
 router.get('/names', async (req, res) => {
   try {
-    const result = await db.query("SELECT name FROM users WHERE role = 'member' AND is_approved = TRUE ORDER BY name ASC");
+    const result = await db.query("SELECT name FROM users WHERE is_approved = TRUE ORDER BY name ASC");
     return res.status(200).json({ success: true, data: result.rows.map(u => u.name) });
   } catch (err) {
     console.error('[Users/Names]', err.message);
