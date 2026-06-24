@@ -111,13 +111,13 @@ export default function DashboardPage() {
               {isAdmin && (
                 <button 
                   onClick={() => setShowRegisteredSection(!showRegisteredSection)} 
-                  className="bg-white border border-gray-200 text-gray-700 px-2.5 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm text-[11px] flex items-center gap-1"
+                  className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
                 >
-                  <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {showRegisteredSection ? 'সদস্য তালিকা হাইড' : 'নিবন্ধিত সদস্য তালিকা'}
-                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 text-[9px]">{members ? members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length : 0} জন</span>
+                  <span className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded-full ml-0.5 text-[9px] font-bold leading-none flex items-center justify-center">{members ? members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length : 0} জন</span>
                 </button>
               )}
               <button onClick={() => window.print()} 
