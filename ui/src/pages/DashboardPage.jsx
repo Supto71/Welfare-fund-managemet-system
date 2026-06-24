@@ -116,9 +116,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Metrics & Shares (Compact Micro Grid) */}
-          <div className="flex flex-col md:flex-row gap-2 items-stretch">
+          <div className="flex flex-col md:flex-row gap-1 items-stretch">
             {/* Stat Cards Container - forced into tight layout */}
-            <div className="grid grid-cols-3 gap-2 flex-[3]">
+            <div className="grid grid-cols-3 gap-1 flex-[3]">
               <StatCard
                 label="মোট সঞ্চয়"
                 value={totalSavings}

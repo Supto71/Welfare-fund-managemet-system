@@ -15,8 +15,8 @@ export default function StatCard({ label, sublabel, value, icon, color = 'green'
   const c = colorMap[color] ?? colorMap.green
 
   return (
-    <div className={`${c.bg} rounded-lg shadow-sm border border-white hover:shadow-md transition-shadow duration-200 flex items-center px-3 py-2 gap-2 min-h-[80px]`}>
-      <div className={`${c.icon} w-5 h-5 rounded flex items-center justify-center shrink-0 ring-1 ${c.ring}`}>
+    <div className={`${c.bg} rounded-lg shadow-sm border border-white hover:shadow-md transition-shadow duration-200 flex items-center px-2 py-1.5 gap-1.5 h-16`}>
+      <div className={`${c.icon} w-4 h-4 rounded flex items-center justify-center shrink-0 ring-1 ${c.ring}`}>
         {icon}
       </div>
       <div className="min-w-0 flex flex-col justify-center">
