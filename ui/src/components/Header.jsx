@@ -37,7 +37,7 @@ export default function Header({ onRefresh }) {
   }
 
   return (
-    <header className="no-print bg-brand-navy text-white shadow-lg">
+    <header className="no-print bg-brand-navy text-white shadow-lg sticky top-0 z-50">
       {/* Top strip */}
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
 
