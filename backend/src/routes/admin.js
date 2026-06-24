@@ -223,6 +223,45 @@ router.post('/welfare-transaction', async (req, res) => {
   }
 });
 
+// ── PUT /api/admin/welfare-transaction/:id ───────────────────────────────────────
+router.put('/welfare-transaction/:id', async (req, res) => {
+  const { id } = req.params;
+  const { date, donor_name, amount, type = 'donation', notes } = req.body;
+
+  if (!date || amount === undefined) {
+    return res.status(400).json({ success: false, message: 'date and amount are required.' });
+  }
+
+  if (type === 'donation' && !donor_name) {
+    return res.status(400).json({ success: false, message: 'donor_name is required for donations.' });
+  }
+
+  if (type === 'expense' && !notes) {
+    return res.status(400).json({ success: false, message: 'notes (purpose) is required for expenses.' });
+  }
+
+  const parsedAmount = parseFloat(amount);
+  if (isNaN(parsedAmount) || parsedAmount < 0) {
+    return res.status(400).json({ success: false, message: 'amount must be a non-negative number.' });
+  }
+
+  try {
+    const result = await db.query(
+      "UPDATE welfare_transactions SET date = $1, donor_name = $2, amount = $3, type = $4, notes = $5 WHERE id = $6",
+      [date, type === 'donation' ? donor_name : '', parsedAmount, type, notes || '', id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: 'Transaction not found.' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Welfare transaction updated successfully.' });
+  } catch (err) {
+    console.error('[Admin/UpdateWelfareTransaction]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to update welfare transaction.' });
+  }
+});
+
 // ── DELETE /api/admin/welfare-transaction/:id ────────────────────────────────────
 router.delete('/welfare-transaction/:id', async (req, res) => {
   const { id } = req.params;
