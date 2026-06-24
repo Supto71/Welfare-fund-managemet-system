@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [pendingUsers, setPendingUsers] = useState([])
   const [showVerificationSection, setShowVerificationSection] = useState(false)
   const [showRegisteredSection, setShowRegisteredSection] = useState(false)
+  const [showBroadcastPanel, setShowBroadcastPanel] = useState(false)
 
   const isAdmin = user?.role === 'admin'
 
@@ -121,6 +122,15 @@ export default function DashboardPage() {
                   <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-0.5 text-[10px] font-bold leading-none flex items-center justify-center">{members ? members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length : 0} জন</span>
                 </button>
               )}
+              {isAdmin && user?.email === 'mohasin_ni@yahoo.com' && (
+                <button 
+                  onClick={() => setShowBroadcastPanel(!showBroadcastPanel)} 
+                  className="bg-white border border-blue-200 text-blue-700 px-3.5 py-1.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                  {showBroadcastPanel ? 'ব্রডকাস্ট হাইড' : 'নোটিফিকেশন পাঠান'}
+                </button>
+              )}
               <button onClick={() => window.print()} 
                 className="bg-white border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -183,8 +193,10 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Admin Notification Box ─────────────────────── */}
-        {isAdmin && user?.email === 'mohasin_ni@yahoo.com' && (
-          <AdminNotificationBox />
+        {isAdmin && user?.email === 'mohasin_ni@yahoo.com' && showBroadcastPanel && (
+          <div className="mx-4 sm:mx-0 animate-slide-down">
+            <AdminNotificationBox />
+          </div>
         )}
 
         {/* ── Pending Approvals Section ──────────────────── */}
