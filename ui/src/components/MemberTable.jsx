@@ -257,10 +257,10 @@ export default function MemberTable({
         )}
 
         {/* Table */}
-        <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full text-sm whitespace-nowrap">
-            <thead>
-              <tr className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider">
+        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-340px)] scrollbar-thin">
+          <table className="w-full text-sm whitespace-nowrap relative">
+            <thead className="sticky top-0 z-30 bg-gray-50 shadow-sm shadow-gray-200/50 outline outline-1 outline-gray-200">
+              <tr className="text-gray-400 text-xs uppercase tracking-wider">
                 <th className="px-5 py-3 text-left font-bold w-8">#</th>
                 <th className="px-5 py-3 text-left font-bold">
                   <div>সদস্যের নাম</div>
