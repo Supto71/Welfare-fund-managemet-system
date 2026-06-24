@@ -91,12 +91,12 @@ export default function DashboardPage() {
 
       <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-2">
         
-        {/* ── HIGHLY COMPACT STICKY TOP PANEL ─────────────────────────── */}
-        <div className="sticky top-[73px] z-40 bg-[#f8f9fa] shadow-sm py-1 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-md border-b border-gray-200 overflow-hidden flex flex-col justify-center space-y-1">
+        {/* ── UNFREEZED COMPACT TOP PANEL ─────────────────────────── */}
+        <div className="flex flex-col justify-center gap-1.5 mb-1 px-4 sm:px-0">
           
           {/* Header & Actions (Slim Layout) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print">
-            <h2 className="text-base font-bold text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print py-1 my-0">
+            <h2 className="text-base font-medium text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
             <div className="flex items-center gap-1">
               {isAdmin && (
                 <button 
@@ -116,9 +116,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Metrics & Shares (Compact Micro Grid) */}
-          <div className="flex flex-col md:flex-row gap-1 items-stretch">
+          <div className="flex flex-col md:flex-row gap-1.5 items-stretch">
             {/* Stat Cards Container - forced into tight layout */}
-            <div className="grid grid-cols-3 gap-1 flex-[3]">
+            <div className="grid grid-cols-3 gap-1.5 flex-[3]">
               <StatCard
                 label="মোট সঞ্চয়"
                 value={totalSavings}
