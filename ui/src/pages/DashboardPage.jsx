@@ -158,7 +158,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── Sticky Top Section: Metrics + Shares Summary ─────────────────────────────── */}
-        <div className="sticky top-[72px] z-40 bg-gray-50 pt-2 pb-6 border-b border-gray-200 shadow-sm -mx-4 px-4 sm:mx-0 sm:px-0 sm:rounded-b-2xl mb-6">
+        <div className="sticky top-0 z-50 bg-gray-50 pt-4 pb-4 border-b border-gray-200 shadow-sm -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
           <section>
           <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
             {selectedMonth === 'all' 

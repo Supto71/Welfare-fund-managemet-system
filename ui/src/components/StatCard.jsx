@@ -15,14 +15,13 @@ export default function StatCard({ label, sublabel, value, icon, color = 'green'
   const c = colorMap[color] ?? colorMap.green
 
   return (
-    <div className={`${c.bg} rounded-2xl p-5 shadow-card border border-white hover:shadow-card-hover transition-shadow duration-200 flex items-start gap-4`}>
-      <div className={`${c.icon} w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ring-4 ${c.ring}`}>
+    <div className={`${c.bg} rounded-xl p-3 shadow-sm border border-white hover:shadow-md transition-shadow duration-200 flex items-center gap-3`}>
+      <div className={`${c.icon} w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-2 ${c.ring}`}>
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-gray-500 text-sm font-medium leading-none">{label}</p>
-        {sublabel && <p className="text-gray-400 text-[11px] mt-0.5">{sublabel}</p>}
-        <div className={`${c.val} text-2xl font-extrabold mt-1.5 tracking-tight flex items-center gap-1`}>
+        <p className="text-gray-500 text-[11px] font-semibold leading-none truncate">{label}</p>
+        <div className={`${c.val} text-lg font-extrabold mt-0.5 tracking-tight flex items-center gap-1`}>
           {prefix}
           <span>{isCurrency ? fmt(value) : value}{suffix}</span>
         </div>
