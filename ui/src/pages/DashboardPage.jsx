@@ -89,7 +89,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header onRefresh={triggerRefresh} className="no-print" />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-4 animate-slide-up">
+      <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-4">
         
         {/* ── STICKY TOP SECTION: Everything ─────────────────────────── */}
         <div className="sticky top-0 z-50 bg-[#f8f9fa] shadow-sm pb-2 pt-2 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-xl border-b border-gray-200 space-y-2">
