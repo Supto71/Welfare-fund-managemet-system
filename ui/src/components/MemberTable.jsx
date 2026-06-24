@@ -342,6 +342,10 @@ export default function MemberTable({
                   <div>অগ্রগতি</div>
                   <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Progress</div>
                 </th>
+                <th className="px-5 py-3 text-left font-bold">
+                  <div>মন্তব্য</div>
+                  <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Remarks</div>
+                </th>
                 <th className="px-5 py-3 text-center font-bold no-print">
                   <div>অ্যাকশন</div>
                   <div className="text-[10px] text-gray-400 font-normal lowercase mt-0.5">Action</div>
@@ -418,6 +422,13 @@ export default function MemberTable({
                       </div>
                     </td>
 
+                    {/* Remarks */}
+                    <td className="px-5 py-3.5 text-left">
+                      <div className="text-gray-500 text-xs truncate max-w-[150px]" title={m.remarks || m.notes || '-'}>
+                        {m.remarks || m.notes || '-'}
+                      </div>
+                    </td>
+
                     {/* Admin/User action */}
                     <td className="px-5 py-3.5 text-center no-print">
                       <div className="inline-flex items-center gap-2">
@@ -455,7 +466,7 @@ export default function MemberTable({
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-gray-400">
+                  <td colSpan={isAdmin ? 10 : 9} className="text-center py-12 text-gray-400">
                     <svg className="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                       <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
@@ -503,7 +514,7 @@ export default function MemberTable({
                       )
                     })()}
                   </td>
-                  <td colSpan={2} />
+                  <td colSpan={3} />
                 </tr>
               </tfoot>
             )}
