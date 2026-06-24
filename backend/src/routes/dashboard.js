@@ -152,15 +152,16 @@ router.get('/member/:id/history', authenticate, async (req, res) => {
     }
 
     const transactionsRes = await db.query(`
-      SELECT date, amount_paid, shares_bought 
+      SELECT date, amount_paid, shares_bought, notes 
       FROM transactions 
       WHERE user_id = $1 
       ORDER BY date DESC
     `, [userId]);
     const transactions = transactionsRes.rows.map(t => ({
-      ...t,
+      date: t.date,
       amount_paid: parseFloat(t.amount_paid),
-      shares_bought: parseInt(t.shares_bought)
+      shares_bought: parseInt(t.shares_bought),
+      note: t.notes
     }));
 
     const monthlySummaryRes = await db.query(`

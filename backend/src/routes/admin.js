@@ -10,7 +10,7 @@ router.use(authenticate, requireRole('admin'));
 
 // ── POST /api/admin/add-transaction ──────────────────────────────────────────
 router.post('/add-transaction', async (req, res) => {
-  const { userId, date, amount_paid, shares_bought } = req.body;
+  const { userId, date, amount_paid, shares_bought, note } = req.body;
 
   if (!userId || date === undefined || amount_paid === undefined || shares_bought === undefined)
     return res.status(400).json({ success: false, message: 'userId, date, amount_paid, and shares_bought are required.' });
@@ -27,8 +27,8 @@ router.post('/add-transaction', async (req, res) => {
 
       // Insert into transactions
       await client.query(
-        'INSERT INTO transactions (user_id, date, amount_paid, shares_bought) VALUES ($1, $2, $3, $4)',
-        [userId, date, Number(amount_paid), Number(shares_bought)]
+        'INSERT INTO transactions (user_id, date, amount_paid, shares_bought, notes) VALUES ($1, $2, $3, $4, $5)',
+        [userId, date, Number(amount_paid), Number(shares_bought), note || null]
       );
 
       // Fetch sum of amount_paid for user

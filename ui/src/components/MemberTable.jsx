@@ -63,10 +63,11 @@ export default function MemberTable({
   const [editMember, setEditMember] = useState(null)
   
   // Transaction Modal State
-  const [txMode,    setTxMode]    = useState('add') // 'add', 'reset', or 'settings'
-  const [txDate,    setTxDate]    = useState(new Date().toISOString().split('T')[0])
   const [txAmount,  setTxAmount]  = useState('')
-  const [txShares,  setTxShares]  = useState('')
+  const [txShares, setTxShares]     = useState('')
+  const [txDate, setTxDate]         = useState('')
+  const [txNote, setTxNote]         = useState('')
+  const [txMode, setTxMode]         = useState('add')
   
   // Edit Profile Mode State
   const [editName,    setEditName]    = useState('')
@@ -113,12 +114,13 @@ export default function MemberTable({
     setSelectedHistoryMonth('all')
   }
 
-  const openEdit = (m) => { 
-    setEditMember(m); 
-    setTxMode('add');
-    setTxDate(new Date().toISOString().split('T')[0]);
-    setTxAmount('');
-    setTxShares('');
+  const openEdit = (m, mode = 'add') => {
+    setEditMember(m)
+    setTxAmount('')
+    setTxShares('')
+    setTxNote('')
+    setTxDate(new Date().toISOString().split('T')[0])
+    setTxMode(mode)
     setEditName(m.name);
     setEditPlanned(m.planned_amount || 5850);
     setMsg('');
@@ -166,11 +168,12 @@ export default function MemberTable({
     setLoading(true); setMsg('')
     try {
       if (txMode === 'add') {
-        await api.addTransaction({ 
-          userId: editMember.id, 
-          date: txDate, 
+        await api.addTransaction({
+          userId: editMember.id,
+          date: txDate,
           amount_paid: Number(txAmount),
-          shares_bought: Number(txShares)
+          shares_bought: Number(txShares) || 0,
+          note: txNote
         })
       } else {
         await api.resetTransaction({
@@ -540,6 +543,7 @@ export default function MemberTable({
                                 <th className="px-4 py-2.5">তারিখ (Date)</th>
                                 <th className="px-4 py-2.5 text-right">পরিমাণ (Amount)</th>
                                 <th className="px-4 py-2.5 text-right">শেয়ার (Shares)</th>
+                                <th className="px-4 py-2.5 text-right">মন্তব্য (Note)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -553,6 +557,7 @@ export default function MemberTable({
                                     </div>
                                   </td>
                                   <td className="px-4 py-2.5 text-right font-semibold text-blue-600">{tx.shares_bought}</td>
+                                  <td className="px-4 py-2.5 text-right text-gray-500 text-xs italic truncate max-w-[120px]" title={tx.note || '-'}>{tx.note || '-'}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -673,6 +678,17 @@ export default function MemberTable({
                         className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium text-gray-700"
                       />
                     </div>
+                    {txMode === 'add' && (
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">মন্তব্য (Note) - ঐচ্ছিক</label>
+                        <textarea
+                          placeholder="উদা: মে মাসের চাঁদা"
+                          value={txNote} onChange={e => setTxNote(e.target.value)}
+                          rows={2}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium text-gray-700 resize-none"
+                        ></textarea>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
