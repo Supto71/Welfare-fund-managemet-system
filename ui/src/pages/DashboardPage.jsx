@@ -92,7 +92,7 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-4 animate-slide-up">
         
         {/* ── STICKY TOP SECTION: Everything ─────────────────────────── */}
-        <div className="sticky top-0 z-50 bg-gray-50/95 backdrop-blur-sm pt-4 pb-3 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-2xl border-b border-gray-200 shadow-sm space-y-3">
+        <div className="sticky top-[72px] z-40 bg-gray-50/95 backdrop-blur-sm pt-4 pb-3 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-2xl border-b border-gray-200 shadow-sm space-y-3">
           
           {/* Header & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 no-print">
