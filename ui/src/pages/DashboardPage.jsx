@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState('all')
   const [pendingUsers, setPendingUsers] = useState([])
   const [showVerificationSection, setShowVerificationSection] = useState(false)
+  const [showRegisteredSection, setShowRegisteredSection] = useState(false)
 
   const isAdmin = user?.role === 'admin'
 
@@ -105,6 +106,18 @@ export default function DashboardPage() {
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   {showVerificationSection ? 'হাইড করুন' : 'রেজিস্ট্রেশন কন্ট্রোল'}
+                </button>
+              )}
+              {isAdmin && (
+                <button 
+                  onClick={() => setShowRegisteredSection(!showRegisteredSection)} 
+                  className="bg-white border border-gray-200 text-gray-700 px-2.5 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm text-[11px] flex items-center gap-1"
+                >
+                  <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {showRegisteredSection ? 'সদস্য তালিকা হাইড' : 'নিবন্ধিত সদস্য তালিকা'}
+                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 text-[9px]">{members ? members.filter(m => m.role === 'member' || m.role === 'admin').length : 0} জন</span>
                 </button>
               )}
               <button onClick={() => window.print()} 
@@ -211,8 +224,8 @@ export default function DashboardPage() {
         )}
 
         {/* ── Registered Members List (Admin Only) ─────────────────────────── */}
-        {isAdmin && (
-          <section className="mt-4">
+        {isAdmin && showRegisteredSection && (
+          <section className="mt-4 mx-4 sm:mx-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                 <div>
