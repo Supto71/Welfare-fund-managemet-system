@@ -92,23 +92,23 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-4">
         
         {/* ── HIGHLY COMPACT STICKY TOP PANEL ─────────────────────────── */}
-        <div className="sticky top-[64px] z-40 bg-white border-b shadow-sm p-2 space-y-1.5 -mx-4 sm:mx-0 sm:rounded-b-md">
+        <div className="sticky top-[73px] z-40 bg-[#f8f9fa] shadow-sm py-1 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-md border-b border-gray-200 space-y-0.5 max-h-[160px] overflow-hidden flex flex-col justify-center">
           
           {/* Header & Actions (Slim Layout) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print">
-            <h2 className="text-lg font-bold text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
-            <div className="flex items-center gap-1.5">
+            <h2 className="text-base font-bold text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
+            <div className="flex items-center gap-1">
               {isAdmin && (
                 <button 
                   onClick={() => setShowVerificationSection(!showVerificationSection)}
-                  className="bg-white border border-blue-200 text-blue-700 px-2.5 py-0.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1 text-[11px]"
+                  className="bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   {showVerificationSection ? 'হাইড করুন' : 'রেজিস্ট্রেশন কন্ট্রোল'}
                 </button>
               )}
               <button onClick={() => window.print()} 
-                className="bg-white border border-gray-200 text-gray-700 px-2.5 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[11px]">
+                className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 PDF প্রিন্ট
               </button>
@@ -116,9 +116,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Metrics & Shares (Compact Micro Grid) */}
-          <div className="flex flex-col lg:flex-row gap-2">
+          <div className="flex flex-col lg:flex-row gap-1 items-stretch">
             {/* Stat Cards Container - forced into tight layout */}
-            <div className="grid grid-cols-3 gap-1.5 flex-[3] [&>*]:p-2.5 [&>*]:min-h-0">
+            <div className="grid grid-cols-3 gap-1 flex-[3]">
               <StatCard
                 label="মোট সঞ্চয়"
                 value={totalSavings}
@@ -157,8 +157,8 @@ export default function DashboardPage() {
                 isCurrency={false}
               />
             </div>
-            {/* Shares Summary Container - custom scaling applied */}
-            <div className="flex-[2] scale-95 origin-top-left lg:scale-100 [&>*]:p-2.5">
+            {/* Shares Summary Container */}
+            <div className="flex-[2]">
               <SharesSummaryBox
                 totalSharesSold={total_shares_sold}
                 monthlyAmount={monthly_amount}
