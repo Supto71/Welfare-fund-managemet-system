@@ -117,7 +117,7 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {showRegisteredSection ? 'সদস্য তালিকা হাইড' : 'নিবন্ধিত সদস্য তালিকা'}
-                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 text-[9px]">{members ? members.filter(m => m.role === 'member' || m.role === 'admin').length : 0} জন</span>
+                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 text-[9px]">{members ? members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length : 0} জন</span>
                 </button>
               )}
               <button onClick={() => window.print()} 
@@ -232,12 +232,12 @@ export default function DashboardPage() {
                   <h2 className="text-xs font-bold text-gray-800">সফলভাবে নিবন্ধিত সদস্য (Successfully Registered)</h2>
                 </div>
                 <div className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {members.filter(m => m.role === 'member' || m.role === 'admin').length} জন
+                  {members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length} জন
                 </div>
               </div>
               <div className="p-4">
                 <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {members.filter(m => m.role === 'member' || m.role === 'admin').map((member, idx) => (
+                  {members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).map((member, idx) => (
                     <li key={member.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition border border-gray-100/50">
                       <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0">
                         {idx + 1}
