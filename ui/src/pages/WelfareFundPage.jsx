@@ -31,9 +31,11 @@ export default function WelfareFundPage() {
   const [filterType, setFilterType] = useState('all') // 'all', 'donation', 'expense'
   const [txType, setTxType] = useState('donation') // 'donation' or 'expense'
   const [notes, setNotes] = useState('')
-  const [editingTxId, setEditingTxId] = useState(null)
   
-  // Form State
+  // Interactive Edit State (as requested)
+  const [editingRecord, setEditingRecord] = useState(null)
+  
+  // Form State for Add Record
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [donorName, setDonorName] = useState('')
   const [amount, setAmount] = useState('')
@@ -73,39 +75,86 @@ export default function WelfareFundPage() {
       setMsg('সব তথ্য সঠিকভাবে পূরণ করুন।')
       return
     }
-    if (txType === 'donation' && !donorName.trim()) {
+      if (txType === 'donation' && !donorName.trim()) {
+        setMsg('দাতার নাম লিখুন।')
+        return
+      }
+      if (txType === 'expense' && !notes.trim()) {
+        setMsg('খরচের খাত/বিবরণ লিখুন।')
+        return
+      }
+      setSaving(true)
+      setMsg('')
+      try {
+        const payload = {
+          date,
+          donor_name: txType === 'donation' ? donorName.trim() : '',
+          amount: Number(amount),
+          type: txType,
+          notes: notes.trim()
+        }
+
+        await api.addWelfareTransaction(payload)
+
+        setShowModal(false)
+        setDonorName('')
+        setNotes('')
+        setAmount('')
+        fetchTransactions()
+      } catch (err) {
+        setMsg(err.message || 'সংরক্ষণ ব্যর্থ হয়েছে।')
+      } finally {
+        setSaving(false)
+      }
+  }
+
+  const handleUpdateRecord = async (e) => {
+    e.preventDefault()
+    if (!editingRecord.date || editingRecord.amount === '' || isNaN(editingRecord.amount) || Number(editingRecord.amount) < 0) {
+      setMsg('সব তথ্য সঠিকভাবে পূরণ করুন।')
+      return
+    }
+    if (editingRecord.type === 'donation' && !(editingRecord.donor_name || '').trim()) {
       setMsg('দাতার নাম লিখুন।')
       return
     }
-    if (txType === 'expense' && !notes.trim()) {
+    if (editingRecord.type === 'expense' && !(editingRecord.notes || '').trim()) {
       setMsg('খরচের খাত/বিবরণ লিখুন।')
       return
     }
+
     setSaving(true)
     setMsg('')
     try {
       const payload = {
-        date,
-        donor_name: txType === 'donation' ? donorName.trim() : '',
-        amount: Number(amount),
-        type: txType,
-        notes: notes.trim()
+        date: editingRecord.date,
+        donor_name: editingRecord.type === 'donation' ? (editingRecord.donor_name || '').trim() : '',
+        amount: Number(editingRecord.amount),
+        type: editingRecord.type,
+        notes: (editingRecord.notes || '').trim()
       }
 
-      if (editingTxId) {
-        await api.editWelfareTransaction(editingTxId, payload)
-      } else {
-        await api.addWelfareTransaction(payload)
-      }
+      await api.editWelfareTransaction(editingRecord.id, payload)
 
-      setShowModal(false)
-      setEditingTxId(null)
-      setDonorName('')
-      setNotes('')
-      setAmount('')
-      fetchTransactions()
+      // Update local state instantly without fetching
+      setTransactions(prev => prev.map(tx => tx.id === editingRecord.id ? { ...tx, ...payload } : tx))
+      
+      // Update summary locally based on diff
+      setSummary(prev => {
+        const isDonation = editingRecord.type === 'donation'
+        const oldAmount = transactions.find(t => t.id === editingRecord.id)?.amount || 0
+        const diff = payload.amount - oldAmount
+        return {
+          ...prev,
+          totalDonation: prev.totalDonation + (isDonation ? diff : 0),
+          totalExpense: prev.totalExpense + (!isDonation ? diff : 0),
+          welfareBalance: prev.welfareBalance + (isDonation ? diff : -diff)
+        }
+      })
+
+      setEditingRecord(null)
     } catch (err) {
-      setMsg(err.message || 'সংরক্ষণ ব্যর্থ হয়েছে।')
+      setMsg(err.message || 'আপডেট ব্যর্থ হয়েছে।')
     } finally {
       setSaving(false)
     }
@@ -358,7 +407,7 @@ export default function WelfareFundPage() {
                         {isAdmin && (
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => openEditModal(tx)}
+                              <button onClick={() => setEditingRecord(tx)}
                                 className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition" title="এডিট (Edit)">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -389,13 +438,10 @@ export default function WelfareFundPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-gray-800 text-lg">
-                    {editingTxId 
-                      ? (txType === 'donation' ? 'অনুদান এডিট করুন' : 'খরচ এডিট করুন')
-                      : (txType === 'donation' ? 'নতুন অনুদান যোগ করুন' : 'নতুন খরচ যোগ করুন')
-                    }
+                    {txType === 'donation' ? 'নতুন অনুদান যোগ করুন' : 'নতুন খরচ যোগ করুন'}
                   </h3>
                 </div>
-                <button onClick={() => { setShowModal(false); setEditingTxId(null); }} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
               </div>
 
               <form onSubmit={handleSave} className="space-y-4">
@@ -454,12 +500,96 @@ export default function WelfareFundPage() {
                 {msg && <p className="text-red-600 text-xs font-medium bg-red-50 p-2 rounded-md">{msg}</p>}
 
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => { setShowModal(false); setEditingTxId(null); }} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition">
+                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition">
                     বাতিল (Cancel)
                   </button>
                   <button type="submit" disabled={saving}
                     className={`flex-[2] text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:shadow-none ${txType === 'donation' ? 'bg-brand-navy hover:bg-brand-navyLight' : 'bg-red-600 hover:bg-red-700'}`}>
                     {saving ? 'সংরক্ষণ...' : 'সংরক্ষণ করুন (Save)'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Record Modal */}
+      {editingRecord && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setEditingRecord(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg">
+                    {editingRecord.type === 'donation' ? 'অনুদান আপডেট করুন' : 'খরচ আপডেট করুন'}
+                  </h3>
+                </div>
+                <button onClick={() => setEditingRecord(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              </div>
+
+              <form onSubmit={handleUpdateRecord} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">তারিখ (Date)</label>
+                  <input
+                    type="date" required
+                    value={editingRecord.date} onChange={e => setEditingRecord({ ...editingRecord, date: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                  />
+                </div>
+                {editingRecord.type === 'donation' ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">বিবরণ / খাত (Description / Purpose)</label>
+                      <input
+                        type="text" required autoFocus placeholder="দাতার নাম লিখুন"
+                        list="donor-suggestions"
+                        value={editingRecord.donor_name || ''} onChange={e => setEditingRecord({ ...editingRecord, donor_name: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">মন্তব্য / নোট (Remarks / Notes)</label>
+                      <input
+                        type="text" placeholder="অনুদানের মন্তব্য/নোট (ঐচ্ছিক)"
+                        value={editingRecord.notes || ''} onChange={e => setEditingRecord({ ...editingRecord, notes: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">বিবরণ / খাত (Description / Purpose)</label>
+                    <input
+                      type="text" required autoFocus placeholder="উদা: চা-নাস্তা, যাতায়াত খরচ"
+                      value={editingRecord.notes || ''} onChange={e => setEditingRecord({ ...editingRecord, notes: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">টাকার পরিমাণ (Amount)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <CurrencySymbol className="w-4 h-4 text-gray-400" />
+                    </span>
+                    <input
+                      type="number" required min="0" step="0.01" placeholder="উদা: 1000"
+                      value={editingRecord.amount} onChange={e => setEditingRecord({ ...editingRecord, amount: e.target.value })}
+                      className={`w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium placeholder-gray-400 ${editingRecord.type === 'donation' ? 'text-green-700' : 'text-red-600'}`}
+                    />
+                  </div>
+                </div>
+
+                {msg && <p className="text-red-600 text-xs font-medium bg-red-50 p-2 rounded-md">{msg}</p>}
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition">
+                    বাতিল (Cancel)
+                  </button>
+                  <button type="submit" disabled={saving}
+                    className={`flex-[2] text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:shadow-none ${editingRecord.type === 'donation' ? 'bg-brand-navy hover:bg-brand-navyLight' : 'bg-red-600 hover:bg-red-700'}`}>
+                    {saving ? 'আপডেট হচ্ছে...' : 'আপডেট করুন (Update)'}
                   </button>
                 </div>
               </form>
