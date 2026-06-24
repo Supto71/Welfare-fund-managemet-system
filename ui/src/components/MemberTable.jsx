@@ -69,9 +69,16 @@ export default function MemberTable({
   const [txNote, setTxNote]         = useState('')
   const [txMode, setTxMode]         = useState('add')
   
-  // Edit Profile Mode State
+  // Edit Profile Mode State (Target & Name)
   const [editName,    setEditName]    = useState('')
   const [editPlanned, setEditPlanned] = useState('')
+  
+  // Full Member Edit Mode State (Name, Deposit, Remarks)
+  const [fullEditMember, setFullEditMember] = useState(null)
+  const [fullEditName, setFullEditName] = useState('')
+  const [fullEditDeposit, setFullEditDeposit] = useState('')
+  const [fullEditRemarks, setFullEditRemarks] = useState('')
+  const [savingFullEdit, setSavingFullEdit] = useState(false)
   
   const [loading,  setLoading]  = useState(false)
   const [msg,      setMsg]      = useState('')
@@ -121,9 +128,41 @@ export default function MemberTable({
     setTxNote('')
     setTxDate(new Date().toISOString().split('T')[0])
     setTxMode(mode)
-    setEditName(m.name);
-    setEditPlanned(m.planned_amount || 5850);
-    setMsg('');
+    setEditName(m.name)
+    setEditPlanned(m.planned_amount || 5850)
+    setEditMember(m)
+    setMsg('')
+  }
+
+  const openProfileEdit = (m) => {
+    setMsg('')
+    setFullEditMember(m)
+    setFullEditName(m.name)
+    setFullEditDeposit(m.individual_total_deposit || 0)
+    setFullEditRemarks(m.remarks || '')
+  }
+
+  const handleFullEditSave = async (e) => {
+    e.preventDefault()
+    if (!fullEditName.trim()) {
+      setMsg('সদস্যের নাম দিতে হবে।')
+      return
+    }
+    setSavingFullEdit(true)
+    setMsg('')
+    try {
+      await api.updateMemberFull(fullEditMember.id, {
+        name: fullEditName.trim(),
+        remarks: fullEditRemarks.trim(),
+        total_deposit: Number(fullEditDeposit)
+      })
+      setFullEditMember(null)
+      onUpdate()
+    } catch (err) {
+      setMsg(err.message || 'আপডেট ব্যর্থ হয়েছে।')
+    } finally {
+      setSavingFullEdit(false)
+    }
   }
   
   const closeEdit = () => { 
@@ -392,13 +431,21 @@ export default function MemberTable({
                           </button>
                         )}
                         {isAdmin && (
-                          <button onClick={() => openEdit(m)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-navy hover:text-white bg-brand-navy/10 hover:bg-brand-navy px-3 py-1.5 rounded-lg transition-colors">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                              <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                            এডিট (Edit)
-                          </button>
+                          <>
+                            <button onClick={() => openEdit(m)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-navy hover:text-white bg-brand-navy/10 hover:bg-brand-navy px-3 py-1.5 rounded-lg transition-colors">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path d="M12 5v14M5 12h14"/>
+                              </svg>
+                              জমা (Deposit)
+                            </button>
+                            <button onClick={() => openProfileEdit(m)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-white bg-gray-100 hover:bg-gray-600 px-2 py-1.5 rounded-lg transition-colors" title="প্রোফাইল এডিট (Edit)">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -707,6 +754,68 @@ export default function MemberTable({
                   }
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Edit Member Modal (Name, Remarks, Total Deposit) */}
+      {isAdmin && fullEditMember && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setFullEditMember(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg">প্রোফাইল আপডেট</h3>
+                  <p className="text-xs font-medium text-brand-navy truncate max-w-[200px]">{fullEditMember.name}</p>
+                </div>
+                <button onClick={() => setFullEditMember(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              </div>
+
+              <form onSubmit={handleFullEditSave} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">সদস্যের নাম (Member Name)</label>
+                  <input
+                    type="text" required
+                    value={fullEditName} onChange={e => setFullEditName(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">টাকার পরিমাণ (Total Deposit)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <CurrencySymbol className="w-4 h-4 text-gray-400" />
+                    </span>
+                    <input
+                      type="number" required min="0" step="0.01"
+                      value={fullEditDeposit} onChange={e => setFullEditDeposit(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-bold text-green-700"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">বি.দ্র: পরিমাণ পরিবর্তন করলে হিস্ট্রি ঠিক রাখার জন্য একটি নতুন লেনদেন যোগ করা হবে।</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">মন্তব্য (Remarks)</label>
+                  <textarea
+                    value={fullEditRemarks} onChange={e => setFullEditRemarks(e.target.value)}
+                    rows={2} placeholder="উদা: কোনো সমস্যা থাকলে লিখুন"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-medium resize-none"
+                  ></textarea>
+                </div>
+
+                {msg && <p className="text-red-600 text-xs font-medium bg-red-50 p-2 rounded-md">{msg}</p>}
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setFullEditMember(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition">
+                    বাতিল
+                  </button>
+                  <button type="submit" disabled={savingFullEdit}
+                    className="flex-[2] bg-brand-navy text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:shadow-none">
+                    {savingFullEdit ? 'সংরক্ষণ...' : 'সংরক্ষণ করুন'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

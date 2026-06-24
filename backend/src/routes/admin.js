@@ -317,6 +317,68 @@ router.put('/update-member', async (req, res) => {
   }
 });
 
+// ── PUT /api/admin/update-member-full/:id ───────────────────────────────────────
+router.put('/update-member-full/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, remarks, total_deposit } = req.body;
+
+  if (!name || total_deposit === undefined) {
+    return res.status(400).json({ success: false, message: 'Name and total_deposit are required.' });
+  }
+
+  const newDeposit = parseFloat(total_deposit);
+  if (isNaN(newDeposit) || newDeposit < 0) {
+    return res.status(400).json({ success: false, message: 'Total deposit must be a valid non-negative number.' });
+  }
+
+  try {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update name
+      await client.query('UPDATE users SET name = $1 WHERE id = $2', [name.trim(), id]);
+
+      // Update remarks (ensure shares_summary exists)
+      const ssRes = await client.query('SELECT * FROM shares_summary WHERE user_id = $1', [id]);
+      if (ssRes.rowCount === 0) {
+        await client.query('INSERT INTO shares_summary (user_id, remarks) VALUES ($1, $2)', [id, remarks || '']);
+      } else {
+        await client.query('UPDATE shares_summary SET remarks = $1 WHERE user_id = $2', [remarks || '', id]);
+      }
+
+      // Handle Adjustment Transaction
+      // Calculate current total
+      const txRes = await client.query('SELECT COALESCE(SUM(amount_paid), 0) AS total FROM transactions WHERE user_id = $1', [id]);
+      const currentTotal = parseFloat(txRes.rows[0].total) || 0;
+      
+      const diff = newDeposit - currentTotal;
+      if (Math.abs(diff) > 0.01) {
+        const shares_bought = Math.floor(diff / 100); // 1 share = 100
+        await client.query(
+          "INSERT INTO transactions (user_id, amount_paid, shares_bought, date) VALUES ($1, $2, $3, TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'))",
+          [id, diff, shares_bought]
+        );
+      }
+
+      await client.query('COMMIT');
+      
+      // Sync to Google Sheets
+      syncMembersToSheet().catch(console.error);
+
+      return res.status(200).json({ success: true, message: 'Member profile updated successfully.' });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('[Admin/UpdateMemberFull]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to update member profile.' });
+  }
+});
+
 // ── GET /api/admin/pending-approvals ─────────────────────────────────────────────
 router.get('/pending-approvals', async (req, res) => {
   try {

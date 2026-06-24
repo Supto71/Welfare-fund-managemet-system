@@ -65,6 +65,7 @@ router.get('/summary', authenticate, async (req, res) => {
             u.email,
             u.role,
             COALESCE(ss.planned_amount, 5850) AS planned_amount,
+            ss.remarks,
             COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = $1 THEN t.shares_bought ELSE 0 END), 0) AS individual_total_shares,
             COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = $2 THEN t.amount_paid ELSE 0 END), 0) AS individual_monthly_deposit,
             COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = $3 THEN t.amount_paid ELSE 0 END), 0) AS individual_total_deposit
@@ -72,7 +73,7 @@ router.get('/summary', authenticate, async (req, res) => {
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
         WHERE u.is_approved = TRUE
-        GROUP BY u.id, ss.planned_amount
+        GROUP BY u.id, ss.planned_amount, ss.remarks
         ORDER BY u.id ASC
       `, [selectedMonth, selectedMonth, selectedMonth]);
       members = membersRes.rows;
@@ -84,6 +85,7 @@ router.get('/summary', authenticate, async (req, res) => {
             u.email,
             u.role,
             COALESCE(ss.planned_amount, 5850) AS planned_amount,
+            ss.remarks,
             COALESCE(SUM(t.shares_bought), 0) AS individual_total_shares,
             COALESCE(SUM(CASE WHEN SUBSTRING(t.date, 1, 7) = TO_CHAR(CURRENT_DATE, 'YYYY-MM') THEN t.amount_paid ELSE 0 END), 0) AS individual_monthly_deposit,
             COALESCE(SUM(t.amount_paid), 0) AS individual_total_deposit
@@ -91,7 +93,7 @@ router.get('/summary', authenticate, async (req, res) => {
         LEFT JOIN shares_summary ss ON u.id = ss.user_id
         LEFT JOIN transactions t ON u.id = t.user_id
         WHERE u.is_approved = TRUE
-        GROUP BY u.id, ss.planned_amount
+        GROUP BY u.id, ss.planned_amount, ss.remarks
         ORDER BY u.id ASC
       `);
       members = membersRes.rows;

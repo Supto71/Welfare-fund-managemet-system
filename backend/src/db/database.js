@@ -49,6 +49,7 @@ const db = {
         planned_amount DOUBLE PRECISION NOT NULL DEFAULT 5850,
         actual_amount  DOUBLE PRECISION NOT NULL DEFAULT 0,
         updated_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        remarks        TEXT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
 
@@ -87,6 +88,13 @@ const db = {
         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Safely add remarks column if it doesn't exist
+    try {
+      await db.query("ALTER TABLE shares_summary ADD COLUMN IF NOT EXISTS remarks TEXT;");
+    } catch (err) {
+      console.log('[DB] Note: remarks column check failed or not supported by this dialect, ignoring.');
+    }
 
     // Seed welfare_fund row if empty
     const fundRes = await db.query('SELECT COUNT(*) AS cnt FROM welfare_fund');
