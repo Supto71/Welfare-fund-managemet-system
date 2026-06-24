@@ -341,7 +341,7 @@ router.post('/broadcast-notification', async (req, res) => {
   }
 
   // Security check: Only the main admin email can broadcast
-  if (req.user.email !== 'kykobadmohsin@gmail.com') {
+  if (req.user.email !== 'mohasin_ni@yahoo.com') {
     return res.status(403).json({ success: false, message: 'Only the main administrator can broadcast messages.' });
   }
 

@@ -183,7 +183,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Admin Notification Box ─────────────────────── */}
-        {isAdmin && user?.email === 'kykobadmohsin@gmail.com' && (
+        {isAdmin && user?.email === 'mohasin_ni@yahoo.com' && (
           <AdminNotificationBox />
         )}
 
