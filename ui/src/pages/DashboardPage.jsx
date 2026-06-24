@@ -92,80 +92,78 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-4">
         
         {/* ── HIGHLY COMPACT STICKY TOP PANEL ─────────────────────────── */}
-        <div className="sticky top-[73px] z-40 bg-[#f8f9fa] shadow-sm py-1 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-md border-b border-gray-200 md:max-h-[120px] overflow-hidden flex flex-col justify-center">
+        <div className="sticky top-[73px] z-40 bg-[#f8f9fa] shadow-sm py-1.5 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-md border-b border-gray-200 overflow-hidden flex flex-col justify-center space-y-1">
           
-          <div className="w-full max-w-4xl mx-auto space-y-0.5">
-            {/* Header & Actions (Slim Layout) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print">
-              <h2 className="text-base font-bold text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
-              <div className="flex items-center gap-1">
-                {isAdmin && (
-                  <button 
-                    onClick={() => setShowVerificationSection(!showVerificationSection)}
-                    className="bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {showVerificationSection ? 'হাইড করুন' : 'রেজিস্ট্রেশন কন্ট্রোল'}
-                  </button>
-                )}
-                <button onClick={() => window.print()} 
-                  className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                  PDF প্রিন্ট
+          {/* Header & Actions (Slim Layout) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print">
+            <h2 className="text-base font-bold text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
+            <div className="flex items-center gap-1">
+              {isAdmin && (
+                <button 
+                  onClick={() => setShowVerificationSection(!showVerificationSection)}
+                  className="bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {showVerificationSection ? 'হাইড করুন' : 'রেজিস্ট্রেশন কন্ট্রোল'}
                 </button>
-              </div>
+              )}
+              <button onClick={() => window.print()} 
+                className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                PDF প্রিন্ট
+              </button>
             </div>
+          </div>
 
-            {/* Metrics & Shares (Compact Micro Grid) */}
-            <div className="flex flex-col md:flex-row gap-1 items-stretch">
-              {/* Stat Cards Container - forced into tight layout */}
-              <div className="grid grid-cols-3 gap-1 flex-[3]">
-                <StatCard
-                  label="মোট সঞ্চয়"
-                  value={totalSavings}
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path d="M6 4h5a8 8 0 0 1 0 16H6V4z" />
-                      <line x1="3" y1="9" x2="18" y2="9" />
-                      <line x1="3" y1="14" x2="18" y2="14" />
-                    </svg>
-                  }
-                  color="green"
-                  prefix={<CurrencySymbol className="w-3.5 h-3.5 text-green-700" />}
-                />
-                <StatCard
-                  label="শেয়ার বিক্রি"
-                  value={soldShares}
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                  }
-                  color="blue"
-                  isCurrency={false}
-                />
-                <StatCard
-                  label="সদস্য"
-                  value={18}
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                      <circle cx="9" cy="7" r="4"/>
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                  }
-                  color="purple"
-                  isCurrency={false}
-                />
-              </div>
-              {/* Shares Summary Container */}
-              <div className="flex-[2]">
-                <SharesSummaryBox
-                  totalSharesSold={total_shares_sold}
-                  monthlyAmount={monthly_amount}
-                  totalAmount={total_amount}
-                />
-              </div>
+          {/* Metrics & Shares (Compact Micro Grid) */}
+          <div className="flex flex-col md:flex-row gap-2 items-stretch">
+            {/* Stat Cards Container - forced into tight layout */}
+            <div className="grid grid-cols-3 gap-2 flex-[3]">
+              <StatCard
+                label="মোট সঞ্চয়"
+                value={totalSavings}
+                icon={
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path d="M6 4h5a8 8 0 0 1 0 16H6V4z" />
+                    <line x1="3" y1="9" x2="18" y2="9" />
+                    <line x1="3" y1="14" x2="18" y2="14" />
+                  </svg>
+                }
+                color="green"
+                prefix={<CurrencySymbol className="w-3.5 h-3.5 text-green-700" />}
+              />
+              <StatCard
+                label="শেয়ার বিক্রি"
+                value={soldShares}
+                icon={
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                }
+                color="blue"
+                isCurrency={false}
+              />
+              <StatCard
+                label="সদস্য"
+                value={18}
+                icon={
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                }
+                color="purple"
+                isCurrency={false}
+              />
+            </div>
+            {/* Shares Summary Container */}
+            <div className="flex-[2]">
+              <SharesSummaryBox
+                totalSharesSold={total_shares_sold}
+                monthlyAmount={monthly_amount}
+                totalAmount={total_amount}
+              />
             </div>
           </div>
         </div>
