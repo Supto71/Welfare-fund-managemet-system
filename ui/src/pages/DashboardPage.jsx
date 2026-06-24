@@ -89,10 +89,10 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header onRefresh={triggerRefresh} className="no-print" />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-4">
+      <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-2">
         
         {/* ── HIGHLY COMPACT STICKY TOP PANEL ─────────────────────────── */}
-        <div className="sticky top-[73px] z-40 bg-[#f8f9fa] shadow-sm py-1.5 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-md border-b border-gray-200 overflow-hidden flex flex-col justify-center space-y-1">
+        <div className="sticky top-[73px] z-40 bg-[#f8f9fa] shadow-sm py-1 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-md border-b border-gray-200 overflow-hidden flex flex-col justify-center space-y-1">
           
           {/* Header & Actions (Slim Layout) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print">
