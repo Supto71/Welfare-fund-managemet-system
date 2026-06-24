@@ -45,6 +45,7 @@ export const api = {
   addWelfareTransaction: (body)    => request('/admin/welfare-transaction', { method: 'POST', body: JSON.stringify(body) }),
   deleteWelfareTransaction: (id)   => request(`/admin/welfare-transaction/${id}`, { method: 'DELETE' }),
   updateMemberSettings: (body)     => request('/admin/update-member', { method: 'PUT', body: JSON.stringify(body) }),
+  broadcastNotification: (body)    => request('/admin/broadcast-notification', { method: 'POST', body: JSON.stringify(body) }),
   
   // User Profile
   updateMyName:    (body)       => request('/users/me/name', { method: 'PUT', body: JSON.stringify(body) }),

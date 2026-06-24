@@ -5,6 +5,7 @@ import Header from '../components/Header'
 import StatCard from '../components/StatCard'
 import SharesSummaryBox from '../components/SharesSummaryBox'
 import MemberTable from '../components/MemberTable'
+import AdminNotificationBox from '../components/AdminNotificationBox'
 import LoadingScreen from '../components/LoadingScreen'
 import ErrorScreen from '../components/ErrorScreen'
 import CurrencySymbol from '../components/CurrencySymbol'
@@ -180,6 +181,11 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Admin Notification Box ─────────────────────── */}
+        {isAdmin && user?.email === 'kykobadmohsin@gmail.com' && (
+          <AdminNotificationBox />
+        )}
 
         {/* ── Pending Approvals Section ──────────────────── */}
         {isAdmin && showVerificationSection && (

@@ -333,5 +333,55 @@ router.post('/reject-user', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to reject user.' });
   }
 });
+// ── POST /api/admin/broadcast-notification ─────────────────────────────────────
+router.post('/broadcast-notification', async (req, res) => {
+  const { subject, message } = req.body;
+  if (!subject || !message) {
+    return res.status(400).json({ success: false, message: 'Subject and message are required.' });
+  }
+
+  // Security check: Only the main admin email can broadcast
+  if (req.user.email !== 'kykobadmohsin@gmail.com') {
+    return res.status(403).json({ success: false, message: 'Only the main administrator can broadcast messages.' });
+  }
+
+  try {
+    // Get all approved members and admins
+    const usersRes = await db.query(
+      "SELECT id FROM users WHERE role IN ('member', 'admin') AND is_approved = true"
+    );
+    const users = usersRes.rows;
+
+    if (users.length === 0) {
+      return res.status(400).json({ success: false, message: 'No approved members found to broadcast.' });
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Bulk insert notifications
+      const insertQuery = `
+        INSERT INTO notifications (user_id, title, message, type) 
+        VALUES ($1, $2, $3, $4)
+      `;
+      for (const u of users) {
+        await client.query(insertQuery, [u.id, subject, message, 'broadcast']);
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    return res.status(200).json({ success: true, message: `Notification broadcasted to ${users.length} members.` });
+  } catch (err) {
+    console.error('[Admin/BroadcastNotification]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to broadcast notification.' });
+  }
+});
 
 module.exports = router;
