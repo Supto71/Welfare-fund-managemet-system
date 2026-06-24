@@ -98,31 +98,31 @@ export default function DashboardPage() {
           {/* Header & Actions (Slim Layout) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 no-print py-1 my-0">
             <h2 className="text-base font-medium text-gray-800 leading-none">ব্যবসায়িক ড্যাশবোর্ড (Business Dashboard)</h2>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {isAdmin && (
                 <button 
                   onClick={() => setShowVerificationSection(!showVerificationSection)}
-                  className="bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
+                  className="bg-white border border-blue-200 text-blue-700 px-3.5 py-1.5 rounded font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   {showVerificationSection ? 'হাইড করুন' : 'রেজিস্ট্রেশন কন্ট্রোল'}
                 </button>
               )}
               {isAdmin && (
                 <button 
                   onClick={() => setShowRegisteredSection(!showRegisteredSection)} 
-                  className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
+                  className="bg-white border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs"
                 >
-                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {showRegisteredSection ? 'সদস্য তালিকা হাইড' : 'নিবন্ধিত সদস্য তালিকা'}
-                  <span className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded-full ml-0.5 text-[9px] font-bold leading-none flex items-center justify-center">{members ? members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length : 0} জন</span>
+                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-0.5 text-[10px] font-bold leading-none flex items-center justify-center">{members ? members.filter(m => (m.role === 'member' || m.role === 'admin') && m.is_approved === true).length : 0} জন</span>
                 </button>
               )}
               <button onClick={() => window.print()} 
-                className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1 text-[10px]">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                className="bg-white border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 PDF প্রিন্ট
               </button>
             </div>
