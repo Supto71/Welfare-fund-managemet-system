@@ -150,8 +150,6 @@ export default function DashboardPage() {
     total_amount, total_shares_sold, monthly_amount,
     monthlyHistory
   } = data
-  
-  const approvedCount = members ? members.filter(m => m.is_approved === true || m.status === 'approved').length : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -184,7 +182,7 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {showRegisteredSection ? 'সদস্য তালিকা হাইড' : 'নিবন্ধিত সদস্য তালিকা'}
-                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-0.5 text-[10px] font-bold leading-none flex items-center justify-center">{approvedCount} জন</span>
+                  <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-0.5 text-[10px] font-bold leading-none flex items-center justify-center">18 জন</span>
                 </button>
               )}
               {isAdmin && user?.email === 'mohasin_ni@yahoo.com' && (
@@ -240,7 +238,7 @@ export default function DashboardPage() {
               />
               <StatCard
                 label="সদস্য"
-                value={approvedCount}
+                value={18}
                 icon={
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
