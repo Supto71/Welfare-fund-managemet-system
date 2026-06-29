@@ -70,7 +70,7 @@ router.post('/register', async (req, res) => {
       } else {
         // Create a new user record
         const insertUserRes = await client.query(
-          'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id',
+          'INSERT INTO users (name, email, password, role, is_approved) VALUES ($1, $2, $3, $4, FALSE) RETURNING id',
           [name, emailLower, hashed, role]
         );
         userId = insertUserRes.rows[0].id;
@@ -93,7 +93,7 @@ router.post('/register', async (req, res) => {
 
     return res.status(201).json({ 
       success: true, 
-      message: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। অনুগ্রহ করে এডমিন অ্যাপ্রুভালের জন্য অপেক্ষা করুন (Registration successful. Please wait for admin approval).', 
+      message: 'আপনার নিবন্ধন অনুরোধটি সফল হয়েছে। অ্যাডমিনের অনুমোদনের জন্য অপেক্ষা করুন।', 
       pendingApproval: true 
     });
   } catch (err) {
