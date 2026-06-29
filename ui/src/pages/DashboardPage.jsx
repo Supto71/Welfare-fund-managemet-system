@@ -91,6 +91,15 @@ export default function DashboardPage() {
     const noPrintElements = element.querySelectorAll('.no-print');
     noPrintElements.forEach(el => el.style.display = 'none');
     
+    // Temporarily remove max-height and overflow so scrollable tables expand fully
+    const scrollableElements = element.querySelectorAll('.overflow-y-auto');
+    const originalStyles = [];
+    scrollableElements.forEach(el => {
+      originalStyles.push({ el, maxHeight: el.style.maxHeight, overflow: el.style.overflow });
+      el.style.maxHeight = 'none';
+      el.style.overflow = 'visible';
+    });
+    
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -114,7 +123,7 @@ export default function DashboardPage() {
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
       heightLeft -= pageHeight;
       
-      while (heightLeft >= 0) {
+      while (heightLeft > 0) {
         position = heightLeft - pdfHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
@@ -128,6 +137,10 @@ export default function DashboardPage() {
     } finally {
       // Restore elements
       noPrintElements.forEach(el => el.style.display = '');
+      originalStyles.forEach(({ el, maxHeight, overflow }) => {
+        el.style.maxHeight = maxHeight;
+        el.style.overflow = overflow;
+      });
     }
   }
 
