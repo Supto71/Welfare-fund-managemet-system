@@ -9,6 +9,8 @@ import AdminNotificationBox from '../components/AdminNotificationBox'
 import LoadingScreen from '../components/LoadingScreen'
 import ErrorScreen from '../components/ErrorScreen'
 import CurrencySymbol from '../components/CurrencySymbol'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 
 const fmt = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -81,6 +83,54 @@ export default function DashboardPage() {
   if (loading) return <LoadingScreen />
   if (error)   return <ErrorScreen message={error} onRetry={triggerRefresh} />
 
+  const downloadFullPage = async () => {
+    const element = document.querySelector('main');
+    if (!element) return;
+    
+    // Temporarily hide elements with 'no-print' class for a cleaner screenshot
+    const noPrintElements = element.querySelectorAll('.no-print');
+    noPrintElements.forEach(el => el.style.display = 'none');
+    
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // If the content is longer than one page, add new pages
+      let heightLeft = pdfHeight;
+      let position = 0;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save('Welfare_Fund_Full_Dashboard.pdf');
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      alert('PDF তৈরি করতে সমস্যা হয়েছে।');
+    } finally {
+      // Restore elements
+      noPrintElements.forEach(el => el.style.display = '');
+    }
+  }
+
   const {
     totalSavings, soldShares,
     memberCount, members,
@@ -131,13 +181,19 @@ export default function DashboardPage() {
                   {showBroadcastPanel ? 'ব্রডকাস্ট হাইড' : 'নোটিফিকেশন পাঠান'}
                 </button>
               )}
-              <button onClick={() => window.print()} 
-                className="bg-white border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                PDF প্রিন্ট
-              </button>
+                <button onClick={() => window.print()} 
+                  className="bg-white border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded font-bold hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-1.5 text-xs">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                  PDF প্রিন্ট
+                </button>
+                <button onClick={downloadFullPage} className="bg-white border border-blue-200 text-blue-700 px-2.5 py-1 rounded font-bold hover:bg-blue-50 transition shadow-sm text-[11px] flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  পুরো পেজ ডাউনলোড
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Metrics & Shares (Compact Micro Grid) */}
           <div className="flex flex-col md:flex-row gap-1.5 items-stretch">
