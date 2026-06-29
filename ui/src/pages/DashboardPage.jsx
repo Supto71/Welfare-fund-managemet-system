@@ -157,7 +157,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header onRefresh={triggerRefresh} className="no-print" />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-2">
+      <main id="printable-full-report" className="flex-1 max-w-6xl mx-auto w-full pb-6 space-y-2">
         
         {/* ── STICKY COMPACT TOP PANEL ─────────────────────────── */}
         <div className="sticky top-[72px] z-40 bg-[#f8f9fa] shadow-sm pb-2 pt-2 px-4 sm:px-6 -mx-4 sm:mx-0 sm:rounded-b-xl border-b border-gray-200 space-y-2">

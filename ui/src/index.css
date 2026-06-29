@@ -18,40 +18,56 @@
 
   /* ── Print Styles ─────────────────────────────────────────── */
   @media print {
-    .no-print, .no-print * {
+    /* Hide top black navbar, action buttons, and side controls */
+    nav, header, .no-print, button, input, .sticky-nav-selector {
       display: none !important;
     }
     
+    /* Reset body background and margins for clean paper output */
     body {
-      background-color: white !important;
-      color: black !important;
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      margin: 0;
+      padding: 0;
     }
 
-    /* Remove shadows and borders for cleaner printing */
-    * {
-      box-shadow: none !important;
+    /* Isolate the full report section */
+    body * {
+      visibility: hidden;
+    }
+    #printable-full-report, #printable-full-report * {
+      visibility: visible;
+    }
+    #printable-full-report {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      display: block !important;
     }
 
-    /* Make containers full width */
-    main, .max-w-6xl {
-      max-width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
+    /* Ensure cards stack neatly or align as a clean grid row on A4 */
+    .grid-cols-6, .grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important; /* 3 cards per row on print */
+      gap: 12px !important;
+      margin-bottom: 20px !important;
     }
 
-    /* Avoid page breaks inside tables */
+    /* Table optimization for print */
     table {
+      width: 100% !important;
+      border-collapse: collapse !important;
       page-break-inside: auto;
     }
     tr {
       page-break-inside: avoid;
       page-break-after: auto;
     }
-    thead {
-      display: table-header-group;
-    }
-    tfoot {
-      display: table-footer-group;
+    
+    @page {
+      size: A4 portrait; /* block changes to landscape if table is too wide */
+      margin: 20mm 15mm;
     }
   }
 }
