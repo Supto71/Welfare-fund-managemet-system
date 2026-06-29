@@ -207,10 +207,10 @@ export default function WelfareFundPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header onRefresh={fetchTransactions} />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in space-y-6">
+      <main id="printable-full-report" className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in space-y-6">
         
         {/* Welfare Summary Box at the top */}
-        <section className="no-print">
+        <section className="mb-4">
           <WelfareFundBox
             totalDonation={summary.totalDonation}
             totalExpense={summary.totalExpense}
