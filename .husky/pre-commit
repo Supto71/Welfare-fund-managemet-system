@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running Pre-commit Checks (Lint & Build)..."
+
+cd ui
+npx lint-staged
+npm run build
