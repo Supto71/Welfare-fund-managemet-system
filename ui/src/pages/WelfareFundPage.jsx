@@ -69,6 +69,16 @@ export default function WelfareFundPage() {
     fetchNames()
   }, [])
 
+  const openNewModal = (type) => {
+    setTxType(type)
+    setDate(new Date().toISOString().split('T')[0])
+    setDonorName('')
+    setAmount('')
+    setNotes('')
+    setMsg('')
+    setShowModal(true)
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
     if (!date || amount === '' || isNaN(amount) || Number(amount) < 0) {
