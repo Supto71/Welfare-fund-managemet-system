@@ -91,6 +91,10 @@ export default function MemberTable({
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedHistoryMonth, setSelectedHistoryMonth] = useState('all')
 
+  const [editingTxId, setEditingTxId] = useState(null)
+  const [editTxForm, setEditTxForm] = useState({ date: '', amount_paid: '', shares_bought: '', note: '' })
+  const [txActionLoading, setTxActionLoading] = useState(false)
+
   const filtered = members.filter(m => {
     if (m.role !== 'member' && m.role !== 'admin') {
       return false
@@ -120,6 +124,52 @@ export default function MemberTable({
     setHistoryMember(null)
     setHistoryData({ transactions: [], monthlySummary: [] })
     setSelectedHistoryMonth('all')
+    setEditingTxId(null)
+  }
+
+  const handleDeleteTx = async (id) => {
+    if (!window.confirm('আপনি কি নিশ্চিত যে এই লেনদেনটি মুছে ফেলতে চান? (Are you sure?)')) return;
+    setTxActionLoading(true)
+    try {
+      await api.deleteTransaction(id)
+      const res = await api.getMemberHistory(historyMember.id)
+      setHistoryData(res.data)
+      onUpdate()
+    } catch (err) {
+      alert(err.message || 'ডিলিট করতে সমস্যা হয়েছে (Failed to delete)')
+    } finally {
+      setTxActionLoading(false)
+    }
+  }
+
+  const handleEditTxClick = (tx) => {
+    setEditingTxId(tx.id)
+    setEditTxForm({
+      date: tx.date,
+      amount_paid: tx.amount_paid,
+      shares_bought: tx.shares_bought,
+      note: tx.note || ''
+    })
+  }
+
+  const handleSaveTxEdit = async () => {
+    setTxActionLoading(true)
+    try {
+      await api.editTransaction(editingTxId, {
+        date: editTxForm.date,
+        amount_paid: Number(editTxForm.amount_paid),
+        shares_bought: Number(editTxForm.shares_bought),
+        note: editTxForm.note
+      })
+      const res = await api.getMemberHistory(historyMember.id)
+      setHistoryData(res.data)
+      setEditingTxId(null)
+      onUpdate()
+    } catch (err) {
+      alert(err.message || 'আপডেট করতে সমস্যা হয়েছে (Failed to update)')
+    } finally {
+      setTxActionLoading(false)
+    }
   }
 
   const openEdit = (m, mode = 'add') => {
@@ -605,22 +655,67 @@ export default function MemberTable({
                                 <th className="px-4 py-2.5 text-right">পরিমাণ (Amount)</th>
                                 <th className="px-4 py-2.5 text-right">শেয়ার (Shares)</th>
                                 <th className="px-4 py-2.5 text-right">মন্তব্য (Note)</th>
+                                {isAdmin && <th className="px-4 py-2.5 text-center">অ্যাকশন (Action)</th>}
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                              {filteredTxs.map((tx, idx) => (
-                                <tr key={idx} className="hover:bg-gray-50">
-                                  <td className="px-4 py-2.5 font-medium text-gray-600">{tx.date}</td>
-                                  <td className="px-4 py-2.5 text-right font-bold text-green-600">
-                                    <div className="inline-flex items-center gap-1 justify-end w-full">
-                                      <CurrencySymbol className="w-3.5 h-3.5 text-green-600" />
-                                      <span>{fmt(tx.amount_paid)}</span>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-2.5 text-right font-semibold text-blue-600">{tx.shares_bought}</td>
-                                  <td className="px-4 py-2.5 text-right text-gray-500 text-xs italic truncate max-w-[120px]" title={tx.note || '-'}>{tx.note || '-'}</td>
-                                </tr>
-                              ))}
+                              {filteredTxs.map((tx, idx) => {
+                                const isEditing = editingTxId === tx.id
+                                return (
+                                  <tr key={idx} className={`hover:bg-gray-50 ${isEditing ? 'bg-blue-50/30' : ''}`}>
+                                    {isEditing ? (
+                                      <>
+                                        <td className="px-4 py-2.5">
+                                          <input type="date" value={editTxForm.date} onChange={e => setEditTxForm({...editTxForm, date: e.target.value})} className="w-full text-xs p-1 border rounded" />
+                                        </td>
+                                        <td className="px-4 py-2.5">
+                                          <input type="number" min="0" step="0.01" value={editTxForm.amount_paid} onChange={e => setEditTxForm({...editTxForm, amount_paid: e.target.value})} className="w-full text-xs p-1 border rounded text-right" />
+                                        </td>
+                                        <td className="px-4 py-2.5">
+                                          <input type="number" min="0" step="1" value={editTxForm.shares_bought} onChange={e => setEditTxForm({...editTxForm, shares_bought: e.target.value})} className="w-full text-xs p-1 border rounded text-right" />
+                                        </td>
+                                        <td className="px-4 py-2.5">
+                                          <input type="text" value={editTxForm.note} onChange={e => setEditTxForm({...editTxForm, note: e.target.value})} className="w-full text-xs p-1 border rounded text-right" />
+                                        </td>
+                                        <td className="px-4 py-2.5 text-center">
+                                          <div className="flex items-center justify-center gap-1">
+                                            <button onClick={handleSaveTxEdit} disabled={txActionLoading} className="text-green-600 hover:bg-green-100 p-1.5 rounded disabled:opacity-50" title="সেভ করুন (Save)">
+                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                            <button onClick={() => setEditingTxId(null)} disabled={txActionLoading} className="text-gray-500 hover:bg-gray-200 p-1.5 rounded disabled:opacity-50" title="বাতিল (Cancel)">
+                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td className="px-4 py-2.5 font-medium text-gray-600">{tx.date}</td>
+                                        <td className="px-4 py-2.5 text-right font-bold text-green-600">
+                                          <div className="inline-flex items-center gap-1 justify-end w-full">
+                                            <CurrencySymbol className="w-3.5 h-3.5 text-green-600" />
+                                            <span>{fmt(tx.amount_paid)}</span>
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-2.5 text-right font-semibold text-blue-600">{tx.shares_bought}</td>
+                                        <td className="px-4 py-2.5 text-right text-gray-500 text-xs italic truncate max-w-[120px]" title={tx.note || '-'}>{tx.note || '-'}</td>
+                                        {isAdmin && (
+                                          <td className="px-4 py-2.5 text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                              <button onClick={() => handleEditTxClick(tx)} disabled={txActionLoading} className="text-blue-600 hover:bg-blue-50 p-1.5 rounded transition disabled:opacity-50" title="এডিট (Edit)">
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                              </button>
+                                              <button onClick={() => handleDeleteTx(tx.id)} disabled={txActionLoading} className="text-red-500 hover:bg-red-50 p-1.5 rounded transition disabled:opacity-50" title="ডিলিট (Delete)">
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                              </button>
+                                            </div>
+                                          </td>
+                                        )}
+                                      </>
+                                    )}
+                                  </tr>
+                                )
+                              })}
                             </tbody>
                           </table>
                         </div>

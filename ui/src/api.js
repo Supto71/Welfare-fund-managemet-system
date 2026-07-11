@@ -39,6 +39,8 @@ export const api = {
   getMemberHistory:(id)         => request(`/dashboard/member/${id}/history`),
   addTransaction:  (body)       => request('/admin/add-transaction', { method: 'POST', body: JSON.stringify(body) }),
   resetTransaction:(body)       => request('/admin/set-transaction', { method: 'PUT', body: JSON.stringify(body) }),
+  editTransaction: (id, body)   => request(`/admin/transaction/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteTransaction: (id)       => request(`/admin/transaction/${id}`, { method: 'DELETE' }),
   updateWelfare:   (body)       => request('/admin/update-welfare', { method: 'PUT', body: JSON.stringify(body) }),
   
   getWelfareTransactions: ()       => request('/welfare/transactions'),

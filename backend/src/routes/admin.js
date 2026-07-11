@@ -492,4 +492,96 @@ router.post('/broadcast-notification', async (req, res) => {
   }
 });
 
+// ── PUT /api/admin/transaction/:id ──────────────────────────────────────────────
+router.put('/transaction/:id', async (req, res) => {
+  const { id } = req.params;
+  const { date, amount_paid, shares_bought, note } = req.body;
+
+  if (!date || amount_paid === undefined || shares_bought === undefined) {
+    return res.status(400).json({ success: false, message: 'date, amount_paid, and shares_bought are required.' });
+  }
+
+  try {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const txRes = await client.query('SELECT user_id FROM transactions WHERE id = $1', [id]);
+      if (txRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, message: 'Transaction not found.' });
+      }
+      const userId = txRes.rows[0].user_id;
+
+      await client.query(
+        'UPDATE transactions SET date = $1, amount_paid = $2, shares_bought = $3, notes = $4 WHERE id = $5',
+        [date, Number(amount_paid), Number(shares_bought), note || null, id]
+      );
+
+      const totalDepositRes = await client.query('SELECT SUM(amount_paid) AS sum FROM transactions WHERE user_id = $1', [userId]);
+      const totalDeposit = parseFloat(totalDepositRes.rows[0].sum) || 0;
+
+      await client.query(
+        `UPDATE shares_summary SET actual_amount = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
+        [totalDeposit, userId]
+      );
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    
+    syncMembersToSheet().catch(console.error);
+    return res.status(200).json({ success: true, message: 'Transaction updated successfully.' });
+  } catch (err) {
+    console.error('[Admin/UpdateTransaction]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to update transaction.' });
+  }
+});
+
+// ── DELETE /api/admin/transaction/:id ───────────────────────────────────────────
+router.delete('/transaction/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const txRes = await client.query('SELECT user_id FROM transactions WHERE id = $1', [id]);
+      if (txRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, message: 'Transaction not found.' });
+      }
+      const userId = txRes.rows[0].user_id;
+
+      await client.query('DELETE FROM transactions WHERE id = $1', [id]);
+
+      const totalDepositRes = await client.query('SELECT SUM(amount_paid) AS sum FROM transactions WHERE user_id = $1', [userId]);
+      const totalDeposit = parseFloat(totalDepositRes.rows[0].sum) || 0;
+
+      await client.query(
+        `UPDATE shares_summary SET actual_amount = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
+        [totalDeposit, userId]
+      );
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    
+    syncMembersToSheet().catch(console.error);
+    return res.status(200).json({ success: true, message: 'Transaction deleted successfully.' });
+  } catch (err) {
+    console.error('[Admin/DeleteTransaction]', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to delete transaction.' });
+  }
+});
+
 module.exports = router;
