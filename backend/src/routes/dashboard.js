@@ -159,7 +159,7 @@ router.get('/member/:id/history', authenticate, async (req, res) => {
       SELECT id, date, amount_paid, shares_bought, notes 
       FROM transactions 
       WHERE user_id = $1 
-      ORDER BY date DESC
+      ORDER BY date DESC, id DESC
     `, [userId]);
     const transactions = transactionsRes.rows.map(t => ({
       id: t.id,
