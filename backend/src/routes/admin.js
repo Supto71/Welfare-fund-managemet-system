@@ -320,7 +320,7 @@ router.put('/update-member', async (req, res) => {
 // ── PUT /api/admin/update-member-full/:id ───────────────────────────────────────
 router.put('/update-member-full/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, remarks, total_deposit } = req.body;
+  const { name, remarks, total_deposit, total_shares } = req.body;
 
   if (!name || total_deposit === undefined) {
     return res.status(400).json({ success: false, message: 'Name and total_deposit are required.' });
@@ -349,15 +349,22 @@ router.put('/update-member-full/:id', async (req, res) => {
 
       // Handle Adjustment Transaction
       // Calculate current total
-      const txRes = await client.query('SELECT COALESCE(SUM(amount_paid), 0) AS total FROM transactions WHERE user_id = $1', [id]);
+      const txRes = await client.query('SELECT COALESCE(SUM(amount_paid), 0) AS total, COALESCE(SUM(shares_bought), 0) AS shares FROM transactions WHERE user_id = $1', [id]);
       const currentTotal = parseFloat(txRes.rows[0].total) || 0;
+      const currentShares = parseInt(txRes.rows[0].shares, 10) || 0;
       
       const diff = newDeposit - currentTotal;
-      if (Math.abs(diff) > 0.01) {
-        const shares_bought = Math.floor(diff / 100); // 1 share = 100
+      let diffShares = 0;
+      if (total_shares !== undefined) {
+        diffShares = parseInt(total_shares, 10) - currentShares;
+      } else {
+        diffShares = Math.floor(diff / 100);
+      }
+      
+      if (Math.abs(diff) > 0.01 || diffShares !== 0) {
         await client.query(
           "INSERT INTO transactions (user_id, amount_paid, shares_bought, date) VALUES ($1, $2, $3, TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'))",
-          [id, diff, shares_bought]
+          [id, diff, diffShares]
         );
       }
 

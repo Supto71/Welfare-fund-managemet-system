@@ -78,6 +78,7 @@ export default function MemberTable({
   const [fullEditName, setFullEditName] = useState('')
   const [fullEditDeposit, setFullEditDeposit] = useState('')
   const [fullEditRemarks, setFullEditRemarks] = useState('')
+  const [fullEditShares, setFullEditShares] = useState('')
   const [savingFullEdit, setSavingFullEdit] = useState(false)
   
   const [loading,  setLoading]  = useState(false)
@@ -139,6 +140,7 @@ export default function MemberTable({
     setFullEditMember(m)
     setFullEditName(m.name)
     setFullEditDeposit(m.individual_total_deposit || 0)
+    setFullEditShares(m.individual_total_shares || 0)
     setFullEditRemarks(m.remarks || '')
   }
 
@@ -154,7 +156,8 @@ export default function MemberTable({
       await api.updateMemberFull(fullEditMember.id, {
         name: fullEditName.trim(),
         remarks: fullEditRemarks.trim(),
-        total_deposit: Number(fullEditDeposit)
+        total_deposit: Number(fullEditDeposit),
+        total_shares: Number(fullEditShares)
       })
       setFullEditMember(null)
       onUpdate()
@@ -805,6 +808,14 @@ export default function MemberTable({
                     />
                   </div>
                   <p className="text-[10px] text-gray-500 mt-1">বি.দ্র: পরিমাণ পরিবর্তন করলে হিস্ট্রি ঠিক রাখার জন্য একটি নতুন লেনদেন যোগ করা হবে।</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">সর্বমোট শেয়ার (Total Shares)</label>
+                  <input
+                    type="number" required min="0" step="1"
+                    value={fullEditShares} onChange={e => setFullEditShares(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-navy text-sm font-bold text-blue-600"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">মন্তব্য (Remarks)</label>
