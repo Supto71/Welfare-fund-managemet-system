@@ -4,7 +4,8 @@ WORKDIR /app/ui
 COPY ui/package*.json ./
 RUN npm install
 COPY ui/ ./
-RUN npm run build
+ARG BUILD_DATE
+RUN echo "Build date: $BUILD_DATE" && npm run build
 
 # Stage 2: Run Backend
 FROM node:22-alpine
