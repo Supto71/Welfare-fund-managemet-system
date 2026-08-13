@@ -365,40 +365,34 @@ export default function WelfareFundPage() {
 
         {/* Search Result Summary Card */}
         {isSearchActive && (
-          <div className="bg-gradient-to-r from-brand-navy/5 to-brand-gold/10 border border-brand-navy/20 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 animate-fade-in">
-            <div className="flex items-center gap-2 text-brand-navy font-bold text-sm flex-shrink-0">
-              <svg className="w-5 h-5 text-brand-gold" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <div style={{ background: 'linear-gradient(to right, #e8edf5, #fef9ec)', border: '1px solid #c7d2e7', borderRadius: '1rem', padding: '1rem 1.25rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.875rem', color: '#1a2d52' }}>
+              <svg style={{ width: '1.25rem', height: '1.25rem', color: '#c9a43a' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
               </svg>
-              <span>&ldquo;{search}&rdquo; — সার্চ ফলাফল ({filteredTransactions.length} টি রেকর্ড)</span>
+              <span>&ldquo;{search}&rdquo; &mdash; {filteredTransactions.length} টি রেকর্ড পাওয়া গেছে</span>
             </div>
-            <div className="flex flex-wrap gap-3 sm:ml-auto">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginLeft: 'auto' }}>
               {searchSummary.totalDonation > 0 && (
-                <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="text-xs font-semibold text-gray-500">মোট চাঁদা:</span>
-                  <span className="font-bold text-green-700 text-sm flex items-center gap-0.5">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem', padding: '0.375rem 0.75rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280' }}>মোট চাঁদা:</span>
+                  <span style={{ fontWeight: '700', color: '#15803d', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.125rem' }}>
                     <CurrencySymbol className="w-3.5 h-3.5 text-green-700" />
                     {fmt(searchSummary.totalDonation)}
                   </span>
                 </div>
               )}
               {searchSummary.totalExpense > 0 && (
-                <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
-                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
-                  </svg>
-                  <span className="text-xs font-semibold text-gray-500">মোট খরচ:</span>
-                  <span className="font-bold text-red-600 text-sm flex items-center gap-0.5">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '0.5rem', padding: '0.375rem 0.75rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280' }}>মোট খরচ:</span>
+                  <span style={{ fontWeight: '700', color: '#dc2626', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.125rem' }}>
                     <CurrencySymbol className="w-3.5 h-3.5 text-red-600" />
                     {fmt(searchSummary.totalExpense)}
                   </span>
                 </div>
               )}
               {filteredTransactions.length === 0 && (
-                <span className="text-xs text-gray-400 italic">কোনো ফলাফল পাওয়া যায়নি</span>
+                <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>কোনো ফলাফল পাওয়া যায়নি</span>
               )}
             </div>
           </div>
