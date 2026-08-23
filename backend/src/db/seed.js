@@ -13,7 +13,10 @@ const ADMIN = {
   password: 'Admin@1234', role: 'admin',
 };
 
-const MEMBERS = [];
+const MEMBERS = [
+  { name: 'Mohammed Lokman Gani', email: 'lokman@asenkhaikakalyan.com' },
+  { name: 'Mainul Islam', email: 'mainul@asenkhaikakalyan.com' }
+];
 
 (async () => {
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
