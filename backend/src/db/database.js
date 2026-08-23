@@ -114,7 +114,9 @@ const db = {
       password: 'Panimo$@#26', role: 'admin',
     };
 
-    const MEMBERS = [];
+    const MEMBERS = [
+      { name: 'Iliyas', email: 'iliyas@asenkhaikakalyan.com' },
+    ];
 
     // Seed/Update Admin
     const adminEmail = ADMIN.email.toLowerCase().trim();
