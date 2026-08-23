@@ -15,7 +15,8 @@ const ADMIN = {
 
 const MEMBERS = [
   { name: 'Mohammed Lokman Gani', email: 'lokman@asenkhaikakalyan.com' },
-  { name: 'Mainul Islam', email: 'mainul@asenkhaikakalyan.com' }
+  { name: 'Mainul Islam', email: 'mainul@asenkhaikakalyan.com' },
+  { name: 'Iliyas', email: 'iliyas@asenkhaikakalyan.com' },
 ];
 
 (async () => {
