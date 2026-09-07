@@ -75,6 +75,9 @@ export default function Header({ onRefresh }) {
           <Link to="/welfare-fund" className={`px-4 py-2 rounded-lg text-sm font-bold transition ${location.pathname === '/welfare-fund' ? 'bg-white text-brand-navy shadow-sm' : 'text-blue-200 hover:text-white hover:bg-white/10'}`}>
             কল্যাণ তহবিল (Welfare Fund)
           </Link>
+          <Link to="/expenses" className={`px-3 py-2 rounded-lg text-sm font-bold transition ${location.pathname === '/expenses' ? 'bg-white text-brand-navy shadow-sm' : 'text-blue-200 hover:text-white hover:bg-white/10'}`}>
+            ব্যয় ও বিনিয়োগ
+          </Link>
         </nav>
 
         {/* Right side */}

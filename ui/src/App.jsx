@@ -4,6 +4,7 @@ import LoginPage     from './pages/LoginPage'
 import HomePage      from './pages/HomePage'
 import DashboardPage from './pages/DashboardPage'
 import WelfareFundPage from './pages/WelfareFundPage'
+import ExpensesPage from './pages/ExpensesPage'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/welfare-fund" element={<ProtectedRoute><WelfareFundPage /></ProtectedRoute>} />
+          <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

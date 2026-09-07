@@ -19,3 +19,7 @@ pnpm-debug.log*
 # System files
 .DS_Store
 Thumbs.db
+
+# Ignore downloaded node and build dist
+node-v20.17.0-win-x64/
+ui/dist/
