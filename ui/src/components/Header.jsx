@@ -76,7 +76,7 @@ export default function Header({ onRefresh }) {
             কল্যাণ তহবিল (Welfare Fund)
           </Link>
           <Link to="/expenses" className={`px-3 py-2 rounded-lg text-sm font-bold transition ${location.pathname === '/expenses' ? 'bg-white text-brand-navy shadow-sm' : 'text-blue-200 hover:text-white hover:bg-white/10'}`}>
-            ব্যয় ও বিনিয়োগ
+            ব্যয় ব্যবস্থাপনা
           </Link>
         </nav>
 
