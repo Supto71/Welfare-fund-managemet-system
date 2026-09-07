@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "../context/AuthContext"
 import { api } from "../api"
 import Header from "../components/Header"
@@ -22,15 +22,8 @@ const fmtDate = (s) => {
 }
 
 // ─── dummy expense records ──────────────────────────────────────────────────────
-const INIT = [
-  { id: 1, date: "2026-09-03", title: "ইন্টারনেট বিল",         amount: 1200,  remarks: "" },
-  { id: 2, date: "2026-09-01", title: "অফিস ভাড়া",             amount: 5000,  remarks: "সেপ্টেম্বর" },
-  { id: 3, date: "2026-08-20", title: "প্রিন্টিং ও স্টেশনারি", amount: 450,   remarks: "" },
-  { id: 4, date: "2026-08-15", title: "ট্রান্সপোর্ট খরচ",      amount: 800,   remarks: "মিটিং যাতায়াত" },
-  { id: 5, date: "2026-07-10", title: "ওষুধ ক্রয়",             amount: 2300,  remarks: "কল্যাণ সুবিধা" },
-]
-
 const BLANK = { date: "", title: "", amount: "", remarks: "" }
+
 
 // ─── Add / Edit modal ──────────────────────────────────────────────────────────
 function Modal({ record, onClose, onSave }) {
@@ -107,16 +100,35 @@ export default function ExpensesPage() {
 
   const [savings,  setSavings]  = useState(0)
   const [loading,  setLoading]  = useState(true)
-  const [records,  setRecords]  = useState(INIT)
+  const [records,  setRecords]  = useState([])
   const [search,   setSearch]   = useState("")
   const [modal,    setModal]    = useState(false)
   const [editing,  setEditing]  = useState(null)
 
+  const fetchData = async () => {
+    try {
+      const [sumRes, txRes] = await Promise.all([
+        api.getSummary("all"),
+        api.getWelfareTransactions()
+      ])
+      setSavings(sumRes.data?.totalSavings || 0)
+      const exps = txRes.data?.transactions?.filter(t => t.type === 'expense').map(t => ({
+        id: t.id,
+        date: t.date,
+        title: t.notes,
+        amount: parseFloat(t.amount),
+        remarks: t.donor_name || ""
+      })) || []
+      setRecords(exps)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    api.getSummary("all")
-      .then(res => setSavings(res.data?.totalSavings || 0))
-      .catch(() => setSavings(0))
-      .finally(() => setLoading(false))
+    fetchData()
   }, [])
 
   const totalExpense = records.reduce((s, r) => s + r.amount, 0)
@@ -132,20 +144,38 @@ export default function ExpensesPage() {
     [records, search]
   )
 
-  const handleSave = (data) => {
-    if (editing) {
-      setRecords(prev => prev.map(r => r.id === editing.id ? { ...r, ...data } : r))
-    } else {
-      const newId = Math.max(0, ...records.map(r => r.id)) + 1
-      setRecords(prev => [{ id: newId, ...data }, ...prev])
+  const handleSave = async (data) => {
+    try {
+      const payload = {
+        date: data.date,
+        amount: Number(data.amount),
+        type: 'expense',
+        notes: data.title,
+        donor_name: data.remarks || ""
+      }
+      if (editing) {
+        await api.editWelfareTransaction(editing.id, payload)
+      } else {
+        await api.addWelfareTransaction(payload)
+      }
+      setModal(false)
+      setEditing(null)
+      fetchData()
+    } catch (err) {
+      alert(err.message || 'সংরক্ষণ ব্যর্থ হয়েছে।')
     }
-    setModal(false); setEditing(null)
   }
+
   const openEdit  = (r) => { setEditing(r); setModal(true) }
   const openAdd   = ()  => { setEditing(null); setModal(true) }
-  const handleDel = (id) => {
+  const handleDel = async (id) => {
     if (!window.confirm("এই রেকর্ডটি মুছতে চান?")) return
-    setRecords(prev => prev.filter(r => r.id !== id))
+    try {
+      await api.deleteWelfareTransaction(id)
+      setRecords(prev => prev.filter(r => r.id !== id))
+    } catch (err) {
+      alert(err.message || 'মুছতে ব্যর্থ হয়েছে।')
+    }
   }
 
   if (loading) return <LoadingScreen />
